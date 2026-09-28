@@ -46,14 +46,12 @@ else
   echo "Release signing secrets incomplete; signing with scripts/android/ci-debug.keystore (installable, not for Play Store)."
 fi
 
-# EnableWindowsTargeting: restore evaluates every TFM of TorgLink.Maui; on Linux
-# ShortP2P.Transport.Bluetooth.Windows fails with NETSDK1100 without this flag.
 # IncludeAndroid=true → ShortP2PBuildAndroid via src/Directory.Build.props.
+# Windows Bluetooth is skipped: TorgLink.Maui omits the Windows TFM on non-Windows.
 dotnet publish src/TorgLink.Maui/TorgLink.Maui.csproj \
   -c "$configuration" \
   -f net10.0-android \
   -p:IncludeAndroid=true \
-  -p:EnableWindowsTargeting=true \
   -p:RuntimeIdentifier="$rid" \
   -p:AndroidPackageFormat=apk \
   "${extra[@]}"

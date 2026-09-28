@@ -2,9 +2,12 @@
 
     <PropertyGroup>
         <!-- Windows is the default TFM so `dotnet run` / IDE F5 can start the desktop app.
-             Android is opt-in: -p:IncludeAndroid=true -->
-        <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
-        <TargetFrameworks Condition="'$(ShortP2PBuildAndroid)' == 'true'">$(TargetFrameworks);net10.0-android</TargetFrameworks>
+             Android is opt-in: -p:IncludeAndroid=true.
+             Omit the Windows TFM on non-Windows so restore does not pull
+             ShortP2P.Transport.Bluetooth.Windows (NETSDK1100). -->
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) and '$(ShortP2PBuildAndroid)' == 'true'">$(TargetFrameworks);net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('windows')) and '$(ShortP2PBuildAndroid)' == 'true'">net10.0-android</TargetFrameworks>
 
         <OutputType>Exe</OutputType>
         <RootNamespace>TorgLink.Maui</RootNamespace>
@@ -113,7 +116,7 @@
         <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.13" Condition="$(TargetFramework.Contains('-android'))" />
     </ItemGroup>
 
-    <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows')) and $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250909003" />
         <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Transport.Bluetooth.Windows\ShortP2P.Transport.Bluetooth.Windows.csproj" />
     </ItemGroup>
