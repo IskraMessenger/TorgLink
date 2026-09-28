@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-windows",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/TorgLink.Maui/TorgLink.Maui.csproj",
+        "-f",
+        "net10.0-windows10.0.19041.0",
+        "-c",
+        "Debug",
+        "-p:RuntimeIdentifier=win-x64"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build-windows-release",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/TorgLink.Maui/TorgLink.Maui.csproj",
+        "-f",
+        "net10.0-windows10.0.19041.0",
+        "-c",
+        "Release",
+        "-p:RuntimeIdentifier=win-x64"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build-web",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/TorgLink.Web.Api/TorgLink.Web.Api.csproj",
+        "-c",
+        "Debug"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

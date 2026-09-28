@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo_mark_32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo_mark_64.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>TorgLink</title>
+  </head>
+  <body>
+    <div id="root">
+      <div class="screen stack" id="boot">
+        <div class="brand">
+          <img src="/assets/logo_wordmark_256.png" alt="TorgLink" />
+          <p class="muted">…</p>
+        </div>
+      </div>
+    </div>
+    <noscript>
+      <div class="empty">JavaScript is required for TorgLink.</div>
+    </noscript>
+    <script src="/lib/signalr.min.js"></script>
+    <script type="module" src="/js/app.js" onerror="document.getElementById('boot').querySelector('p').textContent='Failed to load /js/app.js'"></script>
+    <script>
+      window.addEventListener("error", function (e) {
+        var boot = document.getElementById("boot");
+        if (!boot || !e.message) return;
+        var p = boot.querySelector("p") || boot;
+        p.textContent = e.message;
+      });
+    </script>
+  </body>
+</html>

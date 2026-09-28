@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TorgLink (Windows)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-windows",
+      "program": "${workspaceFolder}/src/TorgLink.Maui/bin/Debug/net10.0-windows10.0.19041.0/win-x64/TorgLink.Maui.exe",
+      "cwd": "${workspaceFolder}/src/TorgLink.Maui/bin/Debug/net10.0-windows10.0.19041.0/win-x64",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "TorgLink MAUI (Windows) - release",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-windows-release",
+      "program": "${workspaceFolder}/src/TorgLink.Maui/bin/Release/net10.0-windows10.0.19041.0/win-x64/TorgLink.Maui.exe",
+      "cwd": "${workspaceFolder}/src/TorgLink.Maui/bin/Release/net10.0-windows10.0.19041.0/win-x64",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "TorgLink.Web",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-web",
+      "program": "${workspaceFolder}/src/TorgLink.Web.Api/bin/Debug/net10.0/TorgLink.Web.Api.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/TorgLink.Web.Api",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5088"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s"
+      }
+    }
+  ]
+}

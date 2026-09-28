@@ -38,7 +38,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: winforms-${{ inputs.configuration }}
-          path: dist/installers/Iskra-*-winforms-*-setup.exe
+          path: dist/installers/TorgLink-*-winforms-*-setup.exe
           if-no-files-found: error
 
   maui-windows:
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: maui-windows-${{ matrix.target }}-${{ inputs.configuration }}
-          path: dist/installers/Iskra-*-setup.exe
+          path: dist/installers/TorgLink-*-setup.exe
           if-no-files-found: error
 
   android:
@@ -103,68 +103,22 @@ jobs:
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
 
-      - name: Decode keystore
-        if: inputs.configuration == 'Release'
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
-            echo "No keystore secret; skipping decode (unsigned APK)."
-            exit 0
-          fi
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/iskra.keystore"
-
       - name: Publish APK
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: |
-          set -euo pipefail
-          extra=()
-          if [ "${{ inputs.configuration }}" = "Release" ] && [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ]; then
-            extra+=(
-              -p:AndroidKeyStore=true
-              -p:AndroidSigningKeyStore="$RUNNER_TEMP/iskra.keystore"
-              -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS"
-              -p:AndroidSigningKeyPass="$ANDROID_KEY_PASSWORD"
-              -p:AndroidSigningStorePass="$ANDROID_KEYSTORE_PASSWORD"
-            )
-          else
-            echo "Debug configuration or signing secrets incomplete; publishing without release signing."
-          fi
-          # EnableWindowsTargeting: restore вычисляет все TFM Iskra.Maui, и для windows-TFM
-          # в граф попадает ShortP2P.Transport.Bluetooth.Windows (net10.0-windows). На Linux
-          # его restore без этого флага падает с NETSDK1100. Проект только restore-ится,
-          # в сборку android-TFM он не входит (ProjectReference с условием на windows).
-          dotnet publish src/Iskra.Maui/Iskra.Maui.csproj \
-            -c ${{ inputs.configuration }} \
-            -f net10.0-android \
-            -p:IncludeAndroid=true \
-            -p:EnableWindowsTargeting=true \
-            -p:RuntimeIdentifier=${{ matrix.rid }} \
-            -p:AndroidPackageFormat=apk \
-            "${extra[@]}"
-          mkdir -p dist/apk
-          mapfile -t apks < <(find src/Iskra.Maui/bin -type f -name '*.apk' ! -name '*-unsigned.apk')
-          if [ ${#apks[@]} -eq 0 ]; then
-            mapfile -t apks < <(find src/Iskra.Maui/bin -type f -name '*.apk')
-          fi
-          if [ ${#apks[@]} -eq 0 ]; then
-            echo "No APK produced" >&2
-            exit 1
-          fi
-          cp "${apks[0]}" "dist/apk/Iskra-${{ matrix.rid }}.apk"
+        run: bash scripts/ci/publish-android-apk.sh ${{ matrix.rid }} ${{ inputs.configuration }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: apk-${{ matrix.rid }}-${{ inputs.configuration }}
-          path: dist/apk/Iskra-${{ matrix.rid }}.apk
+          path: dist/apk/TorgLink-${{ matrix.rid }}.apk
           if-no-files-found: error
 
   web:
-    name: Web (Iskra.Web.Api)
+    name: Web (TorgLink.Web.Api)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -179,13 +133,13 @@ jobs:
       - name: Publish Web API
         run: |
           set -euo pipefail
-          ver=$(grep -oPm1 '(?<=<ApplicationDisplayVersion>)[^<]+' src/Iskra.Maui/Iskra.Maui.csproj)
-          dotnet publish src/Iskra.Web.Api/Iskra.Web.Api.csproj -c ${{ inputs.configuration }} -o dist/web
+          ver=$(grep -oPm1 '(?<=<ApplicationDisplayVersion>)[^<]+' src/TorgLink.Maui/TorgLink.Maui.csproj)
+          dotnet publish src/TorgLink.Web.Api/TorgLink.Web.Api.csproj -c ${{ inputs.configuration }} -o dist/web
           cd dist/web
-          zip -r "../Iskra-${ver}-web.zip" .
+          zip -r "../TorgLink-${ver}-web.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
           name: web-${{ inputs.configuration }}
-          path: dist/Iskra-*-web.zip
+          path: dist/TorgLink-*-web.zip
           if-no-files-found: error
