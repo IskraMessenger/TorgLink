@@ -62,12 +62,6 @@ public sealed partial class MainForm : AppForm
             f.ShowDialog(this);
             ScheduleReload();
         };
-        _btnProfile.Click += (_, _) =>
-        {
-            using var f = _services.GetRequiredService<ProfileForm>();
-            if (f.ShowDialog(this) == DialogResult.OK)
-                ScheduleReload();
-        };
         _btnLogout.Click += async (_, _) =>
         {
             await _auth.LogoutAsync().ConfigureAwait(true);

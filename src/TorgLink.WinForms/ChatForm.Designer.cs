@@ -30,13 +30,13 @@ partial class ChatForm
         this._split = new System.Windows.Forms.SplitContainer();
         this._sidebar = new System.Windows.Forms.ListBox();
         this._right = new System.Windows.Forms.Panel();
-        this._send = new System.Windows.Forms.Button();
-        this._attachDocument = new System.Windows.Forms.Button();
-        this._attachImage = new System.Windows.Forms.Button();
-        this._attachVoice = new System.Windows.Forms.Button();
         this._messages = new System.Windows.Forms.ListBox();
         this._bottom = new System.Windows.Forms.TableLayoutPanel();
         this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+        this._attachVoice = new System.Windows.Forms.Button();
+        this._attachDocument = new System.Windows.Forms.Button();
+        this._attachImage = new System.Windows.Forms.Button();
+        this._send = new System.Windows.Forms.Button();
         this._input = new System.Windows.Forms.TextBox();
         ((System.ComponentModel.ISupportInitialize)(this._split)).BeginInit();
         this._split.Panel1.SuspendLayout();
@@ -86,53 +86,13 @@ partial class ChatForm
         this._right.Size = new System.Drawing.Size(627, 702);
         this._right.TabIndex = 0;
         // 
-        // _send
-        // 
-        this._send.AutoSize = true;
-        this._send.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-        this._send.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._send.Location = new System.Drawing.Point(493, 9);
-        this._send.Name = "_send";
-        this._send.Size = new System.Drawing.Size(116, 45);
-        this._send.TabIndex = 5;
-        this._send.Text = "Отправить";
-        // 
-        // _attachDocument
-        // 
-        this._attachDocument.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._attachDocument.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
-        this._attachDocument.Location = new System.Drawing.Point(251, 9);
-        this._attachDocument.Name = "_attachDocument";
-        this._attachDocument.Size = new System.Drawing.Size(115, 45);
-        this._attachDocument.TabIndex = 4;
-        this._attachDocument.Text = "📄";
-        // 
-        // _attachImage
-        // 
-        this._attachImage.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._attachImage.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
-        this._attachImage.Location = new System.Drawing.Point(130, 9);
-        this._attachImage.Name = "_attachImage";
-        this._attachImage.Size = new System.Drawing.Size(115, 45);
-        this._attachImage.TabIndex = 3;
-        this._attachImage.Text = "🖼";
-        // 
-        // _attachVoice
-        // 
-        this._attachVoice.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._attachVoice.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
-        this._attachVoice.Location = new System.Drawing.Point(9, 9);
-        this._attachVoice.Name = "_attachVoice";
-        this._attachVoice.Size = new System.Drawing.Size(115, 45);
-        this._attachVoice.TabIndex = 2;
-        this._attachVoice.Text = "🎤";
-        // 
         // _messages
         // 
         this._messages.Dock = System.Windows.Forms.DockStyle.Fill;
         this._messages.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
         this._messages.IntegralHeight = false;
         this._messages.Location = new System.Drawing.Point(0, 0);
+        this._messages.Margin = new System.Windows.Forms.Padding(0);
         this._messages.Name = "_messages";
         this._messages.Size = new System.Drawing.Size(627, 462);
         this._messages.TabIndex = 0;
@@ -145,14 +105,20 @@ partial class ChatForm
         this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        this._bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         this._bottom.Controls.Add(this.tableLayoutPanel1, 0, 0);
         this._bottom.Controls.Add(this._input, 0, 0);
         this._bottom.Dock = System.Windows.Forms.DockStyle.Bottom;
         this._bottom.Location = new System.Drawing.Point(0, 462);
         this._bottom.MinimumSize = new System.Drawing.Size(636, 240);
         this._bottom.Name = "_bottom";
-        this._bottom.Padding = new System.Windows.Forms.Padding(6);
         this._bottom.RowCount = 1;
+        this._bottom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this._bottom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 69F));
         this._bottom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
         this._bottom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 69F));
         this._bottom.Size = new System.Drawing.Size(636, 240);
@@ -166,28 +132,77 @@ partial class ChatForm
         this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
         this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
         this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
         this.tableLayoutPanel1.Controls.Add(this._attachVoice, 0, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachDocument, 2, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachImage, 1, 0);
         this.tableLayoutPanel1.Controls.Add(this._send, 4, 0);
         this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
-        this.tableLayoutPanel1.Location = new System.Drawing.Point(9, 168);
+        this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 177);
+        this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
         this.tableLayoutPanel1.Name = "tableLayoutPanel1";
         this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(6);
         this.tableLayoutPanel1.RowCount = 1;
         this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-        this.tableLayoutPanel1.Size = new System.Drawing.Size(618, 63);
+        this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this.tableLayoutPanel1.Size = new System.Drawing.Size(636, 63);
         this.tableLayoutPanel1.TabIndex = 2;
+        // 
+        // _attachVoice
+        // 
+        this._attachVoice.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._attachVoice.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
+        this._attachVoice.Location = new System.Drawing.Point(9, 9);
+        this._attachVoice.Name = "_attachVoice";
+        this._attachVoice.Size = new System.Drawing.Size(118, 45);
+        this._attachVoice.TabIndex = 2;
+        this._attachVoice.Text = "🎤";
+        // 
+        // _attachDocument
+        // 
+        this._attachDocument.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._attachDocument.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
+        this._attachDocument.Location = new System.Drawing.Point(257, 9);
+        this._attachDocument.Name = "_attachDocument";
+        this._attachDocument.Size = new System.Drawing.Size(118, 45);
+        this._attachDocument.TabIndex = 4;
+        this._attachDocument.Text = "📄";
+        // 
+        // _attachImage
+        // 
+        this._attachImage.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._attachImage.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
+        this._attachImage.Location = new System.Drawing.Point(133, 9);
+        this._attachImage.Name = "_attachImage";
+        this._attachImage.Size = new System.Drawing.Size(118, 45);
+        this._attachImage.TabIndex = 3;
+        this._attachImage.Text = "🖼";
+        // 
+        // _send
+        // 
+        this._send.AutoSize = true;
+        this._send.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+        this._send.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._send.Location = new System.Drawing.Point(505, 9);
+        this._send.Name = "_send";
+        this._send.Size = new System.Drawing.Size(122, 45);
+        this._send.TabIndex = 5;
+        this._send.Text = "Отправить";
         // 
         // _input
         // 
         this._input.AcceptsReturn = true;
         this._input.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._input.Location = new System.Drawing.Point(9, 9);
+        this._input.Location = new System.Drawing.Point(0, 0);
+        this._input.Margin = new System.Windows.Forms.Padding(0);
         this._input.Multiline = true;
         this._input.Name = "_input";
         this._input.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-        this._input.Size = new System.Drawing.Size(618, 153);
+        this._input.Size = new System.Drawing.Size(636, 171);
         this._input.TabIndex = 0;
         // 
         // ChatForm

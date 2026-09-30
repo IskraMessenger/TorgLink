@@ -106,7 +106,6 @@ internal static class Program
             return scan;
         });
         services.AddTransient<SettingsForm>();
-        services.AddTransient<ProfileForm>();
         services.AddTransient<LoginForm>();
         services.AddTransient<RegisterForm>();
         services.AddTransient<MainForm>();
