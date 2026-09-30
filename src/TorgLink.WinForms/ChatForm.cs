@@ -998,6 +998,11 @@ public sealed partial class ChatForm : AppForm
 
         public override string ToString() => Text;
     }
+
+    private void _bottom_Paint(object sender, PaintEventArgs e)
+    {
+        throw new System.NotImplementedException();
+    }
 }
 
 public sealed class ChatSwitchedEventArgs(int oldChatId, int newChatId) : EventArgs
