@@ -25,7 +25,7 @@ public sealed partial class MessengerServersForm : AppForm
         _qrFile.Click += async (_, _) => await ImportQrAsync().ConfigureAwait(true);
         _share.Click += ShareSelected;
         _del.Click += async (_, _) => await DeleteAsync().ConfigureAwait(true);
-        _refresh.Click += async (_, _) => await ReloadAsync().ConfigureAwait(true);
+        _refresh.Click += async (_, _) => await RefreshActivityAsync().ConfigureAwait(true);
 
         Load += async (_, _) => await ReloadAsync().ConfigureAwait(true);
     }
@@ -45,6 +45,52 @@ public sealed partial class MessengerServersForm : AppForm
         }
 
         _status.Text = $"Серверов: {rows.Count}";
+    }
+
+    /// <summary>
+    /// Probe every saved server (certificate check) and persist Active/Trusted,
+    /// then reload the list. Same path as <see cref="MessengerServersBootstrap"/> /
+    /// MAUI recheck — required so a server that was down and is now up becomes Active=yes.
+    /// </summary>
+    private async Task RefreshActivityAsync()
+    {
+        _refresh.Enabled = false;
+        _status.Text = "Проверка серверов…";
+        try
+        {
+            var rows = await _manager.ListAsync().ConfigureAwait(true);
+            var tasks = new List<Task>(rows.Count);
+            foreach (var server in rows)
+            {
+                var s = server;
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _manager.RecheckServerAsync(s.Id).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Recheck messenger server {BaseUrl} failed", s.BaseUrl);
+                    }
+                }));
+            }
+
+            if (tasks.Count > 0)
+                await Task.WhenAll(tasks).ConfigureAwait(true);
+
+            await ReloadAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Refresh messenger servers");
+            _status.Text = ex.Message;
+            MessageBox.Show(this, ex.Message, "Сервер", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            _refresh.Enabled = true;
+        }
     }
 
     private async Task AddAsync()
