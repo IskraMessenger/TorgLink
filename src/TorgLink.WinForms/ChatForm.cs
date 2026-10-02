@@ -93,7 +93,7 @@ public sealed partial class ChatForm : AppForm
         _buttonTooltips.SetToolTip(_attachVoice,
             "Голосовое (Ogg Opus): нажмите для начала записи, ещё раз — остановить и отправить. Битрейт зависит от режима экономии трафика.");
         _buttonTooltips.SetToolTip(_attachImage, "Отправить изображение (сжатие по режиму экономии)");
-        _buttonTooltips.SetToolTip(_attachDocument, "Отправить документ");
+        _buttonTooltips.SetToolTip(_attachDocument, "Отправить документ или видео");
         _buttonTooltips.SetToolTip(_send, "Отправить сообщение");
 
         _sidebar.DrawItem += OnSidebarDrawItem;

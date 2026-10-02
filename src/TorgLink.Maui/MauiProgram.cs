@@ -118,6 +118,7 @@ public static class MauiProgram
                 // ignore config read failures
             }
 
+            MediaEconomy.ApplyStandardCeilings(opts);
             return opts;
         });
 

@@ -255,10 +255,46 @@ export function ChatPage(chatId) {
     }
   });
 
+  const kb = 1024;
+  const mb = 1024 * 1024;
+  function attachmentKind(file) {
+    const type = (file.type || "").toLowerCase();
+    const name = (file.name || "").toLowerCase();
+    if (type.startsWith("image/") || /\.(jpe?g|png|gif)$/.test(name)) return "image";
+    if (type.startsWith("video/") || /\.(mp4|mov|avi|wmv|webm|ogv)$/.test(name)) return "video";
+    if (type.startsWith("audio/") || name.endsWith(".ogg")) return "audio";
+    return "document";
+  }
+
+  function attachmentLimit(file, ultra) {
+    const kind = attachmentKind(file);
+    if (ultra) {
+      if (kind === "image") return 50 * kb;
+      return 200 * kb;
+    }
+    if (kind === "image") return 10 * mb;
+    if (kind === "video") return 30 * mb;
+    if (kind === "audio") return mb;
+    return 20 * mb;
+  }
+
   fileInput.addEventListener("change", async () => {
     const f = fileInput.files?.[0];
     fileInput.value = "";
     if (!f) return;
+    let ultra = false;
+    try {
+      const settings = await get("/api/settings");
+      ultra = settings?.trafficQuality === "UltraEconomy";
+    } catch {
+      ultra = false;
+    }
+    const limit = attachmentLimit(f, ultra);
+    if (f.size > limit) {
+      const limitMb = limit % mb === 0 ? limit / mb : Math.round((limit / mb) * 100) / 100;
+      window.alert(t("chat.size_over", limitMb));
+      return;
+    }
     try {
       await postFile(`/api/chats/${chatId}/files`, f);
       await load();

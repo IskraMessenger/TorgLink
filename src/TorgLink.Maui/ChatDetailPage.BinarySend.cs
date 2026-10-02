@@ -179,12 +179,6 @@ public partial class ChatDetailPage
 
         var sendName = pick.FileName;
         var isVideo = Video144pTranscoder.IsVideoMime(mime);
-        
-        if (isVideo)
-        {
-            await UiAlertAsync(Loc.T("chat.file"), "В этой версии отправка видео временно недоступна.").ConfigureAwait(false);
-            return;
-        }
         if (!isVideo)
         {
             var headLen = Math.Min(4096, bytes.Length);
@@ -215,7 +209,7 @@ public partial class ChatDetailPage
         ClearDeliveryIssue();
 
         var photoLabel = Loc.T("preview.photo");
-        var videoLabel = Loc.T("chat.video") + " (в этой версии недоступно)";
+        var videoLabel = Loc.T("chat.video");
         var choice = await DisplayActionSheet(Loc.T("chat.camera"), Loc.T("cancel"), null, photoLabel, videoLabel)
             .ConfigureAwait(true);
         if (string.IsNullOrEmpty(choice) || choice == Loc.T("cancel"))
@@ -224,7 +218,7 @@ public partial class ChatDetailPage
         if (choice == photoLabel)
             await CaptureAndQueueCameraPhotoAsync().ConfigureAwait(true);
         else if (choice == videoLabel)
-            await UiAlertAsync(Loc.T("chat.camera"), "В этой версии отправка видео временно недоступна.").ConfigureAwait(true);
+            await CaptureAndQueueCameraVideoAsync().ConfigureAwait(true);
     }
 
     private async Task CaptureAndQueueCameraPhotoAsync()
@@ -312,13 +306,90 @@ public partial class ChatDetailPage
 
     private async Task CaptureAndQueueCameraVideoAsync()
     {
-        // Video capture is disabled in this release.
-        await UiAlertAsync(Loc.T("chat.camera"), "В этой версии отправка видео временно недоступна.").ConfigureAwait(true);
+        try
+        {
+            if (!MediaPicker.Default.IsCaptureSupported)
+            {
+                await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_unsupported"), Loc.T("ok"))
+                    .ConfigureAwait(true);
+                return;
+            }
+
+            var cam = await Permissions.RequestAsync<Permissions.Camera>().ConfigureAwait(true);
+            if (cam != PermissionStatus.Granted)
+            {
+                await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_perm"), Loc.T("ok"))
+                    .ConfigureAwait(true);
+                return;
+            }
+
+            var mic = await Permissions.RequestAsync<Permissions.Microphone>().ConfigureAwait(true);
+            if (mic != PermissionStatus.Granted)
+            {
+                await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_mic_perm"), Loc.T("ok"))
+                    .ConfigureAwait(true);
+                return;
+            }
+
+#if ANDROID
+            await EnsureLegacyStorageWriteAsync().ConfigureAwait(true);
+#endif
+
+            var video = await MediaPicker.Default.CaptureVideoAsync().ConfigureAwait(true);
+            if (video == null)
+                return;
+
+            await SyncTrafficQualityAsync().ConfigureAwait(true);
+            QueueBinarySend((session, ct) => SendCameraVideoAsync(session, video, ct));
+        }
+        catch (FeatureNotSupportedException)
+        {
+            await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_unsupported"), Loc.T("ok"))
+                .ConfigureAwait(true);
+        }
+        catch (PermissionException)
+        {
+            await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_perm"), Loc.T("ok"))
+                .ConfigureAwait(true);
+        }
+        catch (FileNotFoundException ex) when (IsAppxManifestMissing(ex))
+        {
+            _logger.LogWarning(ex, "Camera video failed: AppxManifest missing");
+            await DisplayAlert(Loc.T("chat.camera"), Loc.T("chat.camera_windows_manifest"), Loc.T("ok"))
+                .ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Capture camera video failed");
+            ShowDeliveryIssue(ex.Message);
+        }
     }
 
     private async Task SendCameraVideoAsync(ChatP2PSession session, FileResult video, CancellationToken ct)
     {
-        await UiAlertAsync(Loc.T("chat.camera"), "В этой версии отправка видео временно недоступна.").ConfigureAwait(true);
+        var bytes = await ReadPickBytesAsync(video, ct).ConfigureAwait(false);
+        var fileName = string.IsNullOrWhiteSpace(video.FileName)
+            ? $"camera-{DateTime.UtcNow:yyyyMMdd-HHmmss}.mp4"
+            : video.FileName;
+        AppLog.BinaryLoaded("camera-video", fileName, bytes.Length);
+        if (bytes.Length < 32)
+        {
+            await UiAlertAsync(Loc.T("chat.camera"), Loc.T("chat.camera_fail")).ConfigureAwait(false);
+            return;
+        }
+
+        if (!TryGetDocumentOrVideoMime(fileName, out var mime))
+            mime = "video/mp4";
+
+        var prepared = await PrepareOutgoingFileAsync(bytes, fileName, mime, isVideo: true, ct).ConfigureAwait(false);
+        if (prepared == null)
+            return;
+
+        _media.ValidateDocumentMime(prepared.Value.Mime);
+        await PrepareBinarySendAsync().ConfigureAwait(false);
+        await session.SendFileAsync(prepared.Value.FileName, prepared.Value.Bytes, prepared.Value.Mime, ct)
+            .ConfigureAwait(false);
+        MainThread.BeginInvokeOnMainThread(ClearDeliveryIssue);
     }
 
     private async Task FinishAndSendVoiceAsync(
@@ -328,8 +399,15 @@ public partial class ChatDetailPage
         {
             var recorded = await voice.TakeResultAsync(ct).ConfigureAwait(false);
             AppLog.BinaryLoaded("voice", recorded.FileName, recorded.Bytes.Length);
+            if (recorded.Bytes.Length > MediaEconomy.VoiceLimit(_p2p))
+            {
+                await UiAlertAsync(Loc.T("chat.size"), FormatByteLimit(MediaEconomy.VoiceLimit(_p2p)))
+                    .ConfigureAwait(false);
+                return;
+            }
+
             _media.ValidateDocumentMime(recorded.MimeType);
-            _media.ValidateDocumentSize(recorded.Bytes.Length);
+            _media.ValidateVoiceSize(recorded.Bytes.Length, MediaEconomy.Mode(_p2p));
             await PrepareBinarySendAsync().ConfigureAwait(false);
             await session.SendFileAsync(recorded.FileName, recorded.Bytes, recorded.MimeType, ct)
                 .ConfigureAwait(false);
@@ -358,7 +436,7 @@ public partial class ChatDetailPage
 
     private (byte[]? Bytes, string Mime, string? Error) FitOutgoingImage(byte[] bytes, string mime)
     {
-        var limit = MediaEconomy.ImageLimit(_media, _p2p);
+        var limit = MediaEconomy.ImageLimit(_p2p);
         if (bytes.Length <= limit)
             return (bytes, mime, null);
 
@@ -408,20 +486,30 @@ public partial class ChatDetailPage
                 }
             }
         }
-        else if (bytes.Length > _media.MaxDocumentBytes)
+        else if (bytes.Length > OutgoingFileLimit(isVideo))
         {
-            var limKb = (_media.MaxDocumentBytes + 1023) / 1024;
-            await UiAlertAsync(Loc.T("chat.size"), $"В данной версии размер передаваемых файлов ограничен {limKb} кБ").ConfigureAwait(false);
+            await UiAlertAsync(Loc.T("chat.size"), FormatByteLimit(OutgoingFileLimit(isVideo))).ConfigureAwait(false);
             return null;
         }
 
-        if (bytes.Length > _media.MaxDocumentBytes)
+        if (bytes.Length > OutgoingFileLimit(isVideo))
         {
             await UiAlertAsync(Loc.T("chat.size"), Loc.T("chat.size_still")).ConfigureAwait(false);
             return null;
         }
 
         return (bytes, mime, fileName);
+    }
+
+    private int OutgoingFileLimit(bool isVideo) =>
+        isVideo ? MediaEconomy.VideoLimit(_p2p) : MediaEconomy.DocumentLimit(_p2p);
+
+    private static string FormatByteLimit(int bytes)
+    {
+        if (bytes >= 1024 * 1024 && bytes % (1024 * 1024) == 0)
+            return $"В данной версии размер передаваемых файлов ограничен {bytes / (1024 * 1024)} МБ";
+        var kb = (bytes + 1023) / 1024;
+        return $"В данной версии размер передаваемых файлов ограничен {kb} кБ";
     }
 
     private async Task PrepareBinarySendAsync()

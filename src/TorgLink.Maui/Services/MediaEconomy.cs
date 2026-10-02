@@ -8,10 +8,12 @@ namespace TorgLink.Maui.Services;
 /// <summary>
 /// Media quality / traffic modes aligned with ShortP2P <see cref="TrafficQualityMode"/>.
 /// Selection: Settings → traffic quality (persisted in P2pRoutingSettings.TrafficQuality).
+/// Normal and Economy use <see cref="ChatMediaOptions"/> ceilings (10 MB image, 20 MB document, 30 MB video).
+/// UltraEconomy keeps the TorgLink 50 KB image cap and ShortP2P super-economy file caps.
 /// </summary>
 internal static class MediaEconomy
 {
-    /// <summary>Soft image cap in Economy / UltraEconomy (TorgLink-specific; WinForms does not compress photos).</summary>
+    /// <summary>Soft image cap in UltraEconomy (stricter than ShortP2P 100 KB).</summary>
     public const int MaxImageBytes = 50 * 1024;
 
     /// <summary>TorgLink voice rates (override ShortP2P 6 / 4 kbit/s).</summary>
@@ -57,13 +59,42 @@ internal static class MediaEconomy
 
     public static int CameraVideoBitrate(UserP2pRuntime p2p) => Mode(p2p).GetCameraVideoBitrate();
 
-    public static int ImageLimit(ChatMediaOptions media, UserP2pRuntime p2p) =>
-        UsesReducedMedia(p2p) ? MaxImageBytes : media.MaxImageBytes;
+    public static bool IsUltraEconomy(TrafficQualityMode mode) => ChatMediaOptions.IsSuperEconomy(mode);
+
+    public static int ImageLimit(UserP2pRuntime p2p) =>
+        IsUltraEconomy(Mode(p2p)) ? MaxImageBytes : ChatMediaOptions.DefaultMaxImageBytes;
+
+    public static int DocumentLimit(UserP2pRuntime p2p) =>
+        IsUltraEconomy(Mode(p2p))
+            ? ChatMediaOptions.SuperEconomyMaxDocumentBytes
+            : ChatMediaOptions.DefaultMaxDocumentBytes;
+
+    public static int VideoLimit(UserP2pRuntime p2p) =>
+        IsUltraEconomy(Mode(p2p))
+            ? ChatMediaOptions.SuperEconomyMaxVideoBytes
+            : ChatMediaOptions.DefaultMaxVideoBytes;
+
+    public static int VoiceLimit(UserP2pRuntime p2p) =>
+        IsUltraEconomy(Mode(p2p))
+            ? ChatMediaOptions.SuperEconomyMaxVoiceBytes
+            : ChatMediaOptions.DefaultMaxVoiceBytes;
+
+    /// <summary>
+    /// Pins shared <see cref="ChatMediaOptions"/> to the non-ultra ceilings so session validation
+    /// accepts Normal/Economy payloads. UltraEconomy keeps ShortP2P super-economy constants.
+    /// </summary>
+    public static void ApplyStandardCeilings(ChatMediaOptions options)
+    {
+        options.MaxImageBytes = ChatMediaOptions.DefaultMaxImageBytes;
+        options.MaxDocumentBytes = ChatMediaOptions.DefaultMaxDocumentBytes;
+        options.MaxVideoBytes = ChatMediaOptions.DefaultMaxVideoBytes;
+        options.MaxVoiceBytes = ChatMediaOptions.DefaultMaxVoiceBytes;
+    }
 
     public static string Hint(TrafficQualityMode mode)
     {
         var (w, h) = mode.GetVideoResolution();
-        var photoKb = mode is TrafficQualityMode.Normal ? null : (int?)(MaxImageBytes / 1024);
+        var photoKb = IsUltraEconomy(mode) ? (int?)(MaxImageBytes / 1024) : null;
         return photoKb is null
             ? Loc.Tf("economy.hint_normal", SpeechBitrate(mode) / 1000.0, w, h)
             : Loc.Tf("economy.hint", SpeechBitrate(mode) / 1000.0, photoKb.Value, w, h);

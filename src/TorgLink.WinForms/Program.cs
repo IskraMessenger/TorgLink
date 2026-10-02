@@ -52,7 +52,12 @@ internal static class Program
         services.AddSingleton<MessengerServerManager>();
         services.AddSingleton<MessengerServerSyncService>();
         services.AddSingleton<P2pRoutingSettingsStore>();
-        services.AddSingleton(_ => ChatMediaOptions.LoadOrDefault(Path.Combine(appRoot, "chat-media.json")));
+        services.AddSingleton(_ =>
+        {
+            var opts = ChatMediaOptions.LoadOrDefault(Path.Combine(appRoot, "chat-media.json"));
+            MediaEconomy.ApplyStandardCeilings(opts);
+            return opts;
+        });
         services.AddSingleton<IPeerProfileStore, SqlitePeerProfileStore>();
         services.AddSingleton<ILocalPeerProfileSource, AuthLocalPeerProfileSource>();
         services.AddSingleton(sp =>
