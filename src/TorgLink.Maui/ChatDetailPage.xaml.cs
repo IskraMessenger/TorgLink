@@ -187,6 +187,7 @@ public partial class ChatDetailPage : ContentPage
         SetControlHint(BlockPeerButton, Loc.T("blacklist.add_hint"));
         SetControlHint(ClearChatButton, Loc.T("chat.delete_hint"));
         SetControlHint(EmergencyUntrustButton, Loc.T("safety.untrust_hint"));
+        SetControlHint(PathModeButton, Loc.T("chat.path_hint"));
         MessageEntry.Placeholder = Loc.T("chat.message_ph");
         _chat = chat;
         _peerNetworkIdShort = chat.PeerNetworkIdShort;
@@ -203,13 +204,18 @@ public partial class ChatDetailPage : ContentPage
 
         // Session object + history first; nickname / P2P handshake stay off the critical path.
         EnsureP2pSessionAttached(user, chat);
+        RefreshDeliveryPathButton();
 
         if (_hooksAttached && _boundChatId == chat.Id)
         {
             EnsurePresenceRefreshTimerStarted();
             RefreshPeerPresenceLabel();
+            // Always refresh: a prior AppendLatest can be dropped while _isLoadingRows,
+            // leaving a non-empty stale list that would skip a Count==0-only reload.
             if (_messageItems.Count == 0)
                 await ReloadMessagesAsync().ConfigureAwait(true);
+            else
+                await AppendLatestMessagesAsync().ConfigureAwait(true);
             _ = TryRefreshPeerNicknameDisplayAsync(chat);
             return;
         }
@@ -227,7 +233,7 @@ public partial class ChatDetailPage : ContentPage
     /// </summary>
     private ChatP2PSession? EnsureP2pSessionAttached(UserEntity user, ChatEntity chat)
     {
-        if (_p2pSession != null)
+        if (_p2pSession != null && _boundChatId == chat.Id)
         {
             if (!_p2p.IsChatSessionStarted(chat.Id))
                 TryBeginConnectChatTransport(user, chat, _p2pSession);
@@ -236,6 +242,13 @@ public partial class ChatDetailPage : ContentPage
 
         try
         {
+            if (_p2pSession != null)
+            {
+                _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
+                _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
+                _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+            }
+
             var uiSync = SynchronizationContext.Current;
             _p2pSession = _p2p.GetSession(chat, user, _auth, _repo, uiSync);
             if (_hooksAttached)
@@ -244,6 +257,8 @@ public partial class ChatDetailPage : ContentPage
                 _p2pSession.MessagesChanged += OnP2PMessagesChanged;
                 _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
                 _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
+                _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+                _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
             }
 
             TryBeginConnectChatTransport(user, chat, _p2pSession);
@@ -394,6 +409,8 @@ public partial class ChatDetailPage : ContentPage
             _p2pSession.MessagesChanged += OnP2PMessagesChanged;
             _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
             _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
+            _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+            _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
         }
 
         _hooksAttached = true;
@@ -416,6 +433,7 @@ public partial class ChatDetailPage : ContentPage
         {
             _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
             _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
+            _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
         }
 
         _hooksAttached = false;
@@ -698,6 +716,11 @@ public partial class ChatDetailPage : ContentPage
         finally
         {
             _isLoadingRows = false;
+            if (_pendingReload)
+            {
+                _pendingReload = false;
+                await ReloadMessagesAsync().ConfigureAwait(true);
+            }
         }
     }
 
@@ -1059,29 +1082,30 @@ public partial class ChatDetailPage : ContentPage
         }
 
         ClearDeliveryIssue();
-        MessageEntry.Text = string.Empty;
 
         try
         {
             // Queues to SQLite + outbound worker; must not wait for handshake.
             await session.SendTextAsync(text).ConfigureAwait(true);
+            // Clear only after persist — premature clear + dropped AppendLatest looked like "send ate text".
+            MessageEntry.Text = string.Empty;
             ClearDeliveryIssue();
         }
         catch (OutboundMessageQueuedException ex)
         {
             _logger.LogInformation(ex, "Message queued until peer is on LAN");
+            MessageEntry.Text = string.Empty;
             ShowDeliveryIssue(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Send message failed");
-            MessageEntry.Text = text;
             ShowDeliveryIssue(ex.Message);
         }
         finally
         {
-            // Cheap tail refresh — full ReloadMessages would contend with DB / UI.
-            await AppendLatestMessagesAsync().ConfigureAwait(true);
+            // Full reload is safer than AppendLatest (which no-ops while _isLoadingRows).
+            await ReloadMessagesAsync().ConfigureAwait(true);
         }
     }
 
@@ -1695,6 +1719,58 @@ public partial class ChatDetailPage : ContentPage
     {
         DeliveryIssueLabel.Text = string.Empty;
         DeliveryIssueLabel.IsVisible = false;
+    }
+
+    private void RefreshDeliveryPathButton()
+    {
+        var path = _p2pSession?.DeliveryPath ?? ChatDeliveryPath.Auto;
+        PathModeButton.Text = path switch
+        {
+            ChatDeliveryPath.Server => Loc.T("chat.path_server"),
+            ChatDeliveryPath.Mesh => Loc.T("chat.path_mesh"),
+            _ => Loc.T("chat.path_auto")
+        };
+    }
+
+    private void OnDeliveryPathChanged(object? sender, EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(RefreshDeliveryPathButton);
+    }
+
+    private async void OnPathModeClicked(object? sender, EventArgs e)
+    {
+        if (_p2pSession == null)
+            return;
+
+        var serverChoice = Loc.T("chat.path_server_choice");
+        var meshChoice = Loc.T("chat.path_mesh_choice");
+        var choice = await DisplayActionSheet(
+            Loc.T("chat.path_title"),
+            Loc.T("cancel"),
+            null,
+            serverChoice,
+            meshChoice).ConfigureAwait(true);
+
+        ChatDeliveryPath? path = choice switch
+        {
+            _ when choice == serverChoice => ChatDeliveryPath.Server,
+            _ when choice == meshChoice => ChatDeliveryPath.Mesh,
+            _ => null
+        };
+        if (path == null)
+            return;
+
+        try
+        {
+            await _p2pSession.SwitchDeliveryPathAsync(path.Value).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Delivery path switch failed for chat {ChatId}", ChatId);
+            await DisplayAlert(Loc.T("chat.path_title"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+        }
+
+        RefreshDeliveryPathButton();
     }
 
     private async void OnBlockPeerClicked(object? sender, EventArgs e)

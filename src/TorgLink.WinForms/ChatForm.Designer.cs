@@ -12,6 +12,7 @@ partial class ChatForm
     private System.Windows.Forms.Button _attachVoice;
     private System.Windows.Forms.Button _attachImage;
     private System.Windows.Forms.Button _attachDocument;
+    private System.Windows.Forms.Button _deliveryPath;
     private System.Windows.Forms.Button _send;
 
     protected override void Dispose(bool disposing)
@@ -36,6 +37,7 @@ partial class ChatForm
         this._attachVoice = new System.Windows.Forms.Button();
         this._attachDocument = new System.Windows.Forms.Button();
         this._attachImage = new System.Windows.Forms.Button();
+        this._deliveryPath = new System.Windows.Forms.Button();
         this._send = new System.Windows.Forms.Button();
         this._input = new System.Windows.Forms.TextBox();
         ((System.ComponentModel.ISupportInitialize)(this._split)).BeginInit();
@@ -140,6 +142,7 @@ partial class ChatForm
         this.tableLayoutPanel1.Controls.Add(this._attachVoice, 0, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachDocument, 2, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachImage, 1, 0);
+        this.tableLayoutPanel1.Controls.Add(this._deliveryPath, 3, 0);
         this.tableLayoutPanel1.Controls.Add(this._send, 4, 0);
         this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
         this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 177);
@@ -182,6 +185,16 @@ partial class ChatForm
         this._attachImage.TabIndex = 3;
         this._attachImage.Text = "🖼";
         // 
+        // _deliveryPath
+        // 
+        this._deliveryPath.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._deliveryPath.Font = new System.Drawing.Font("Segoe UI", 9F);
+        this._deliveryPath.Location = new System.Drawing.Point(381, 9);
+        this._deliveryPath.Name = "_deliveryPath";
+        this._deliveryPath.Size = new System.Drawing.Size(118, 45);
+        this._deliveryPath.TabIndex = 5;
+        this._deliveryPath.Text = "Путь: авто";
+        // 
         // _send
         // 
         this._send.AutoSize = true;
@@ -190,7 +203,7 @@ partial class ChatForm
         this._send.Location = new System.Drawing.Point(505, 9);
         this._send.Name = "_send";
         this._send.Size = new System.Drawing.Size(122, 45);
-        this._send.TabIndex = 5;
+        this._send.TabIndex = 6;
         this._send.Text = "Отправить";
         // 
         // _input

@@ -94,7 +94,10 @@ public sealed partial class ChatForm : AppForm
             "Голосовое (Ogg Opus): нажмите для начала записи, ещё раз — остановить и отправить. Битрейт зависит от режима экономии трафика.");
         _buttonTooltips.SetToolTip(_attachImage, "Отправить изображение (сжатие по режиму экономии)");
         _buttonTooltips.SetToolTip(_attachDocument, "Отправить документ или видео");
+        _buttonTooltips.SetToolTip(_deliveryPath,
+            "Переключить доставку этого чата: сервер или mesh (UDP/BLE). Ручной выбор держится, пока не переключите обратно.");
         _buttonTooltips.SetToolTip(_send, "Отправить сообщение");
+        _deliveryPath.Click += (_, _) => ShowDeliveryPathMenu();
 
         _sidebar.DrawItem += OnSidebarDrawItem;
         _sidebar.SelectedIndexChanged += OnSidebarSelectedIndexChanged;
@@ -119,6 +122,7 @@ public sealed partial class ChatForm : AppForm
             if (_p2pSession != null)
             {
                 _p2pSession.MessagesChanged -= OnP2pMessagesChanged;
+                _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
                 _p2pSession = null;
             }
 
@@ -272,6 +276,7 @@ public sealed partial class ChatForm : AppForm
         }
 
         await RefreshChatEntityAsync().ConfigureAwait(true);
+        RefreshDeliveryPathButton();
     }
 
     private void EnsureSession(UserEntity user)
@@ -285,6 +290,9 @@ public sealed partial class ChatForm : AppForm
             () => new ChatP2PSession(_chat, user, _chats, sync, uiSync, logger),
             s => s.ApplyChatRow(_chat));
         _p2pSession.MessagesChanged += OnP2pMessagesChanged;
+        _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+        _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+        RefreshDeliveryPathButton();
     }
 
     private void DetachP2pMessagesChanged()
@@ -292,6 +300,53 @@ public sealed partial class ChatForm : AppForm
         if (_p2pSession == null)
             return;
         _p2pSession.MessagesChanged -= OnP2pMessagesChanged;
+        _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+    }
+
+    private void RefreshDeliveryPathButton()
+    {
+        _deliveryPath.Text = _p2pSession == null
+            ? ChatP2PSession.DeliveryPathLabel(ChatDeliveryPath.Auto)
+            : ChatP2PSession.DeliveryPathLabel(_p2pSession.DeliveryPath);
+    }
+
+    private void OnDeliveryPathChanged(object? sender, EventArgs e)
+    {
+        if (IsHandleCreated)
+            BeginInvoke(RefreshDeliveryPathButton);
+    }
+
+    private void ShowDeliveryPathMenu()
+    {
+        if (_p2pSession == null)
+            return;
+
+        var menu = new ContextMenuStrip();
+        menu.Closed += (_, _) => menu.Dispose();
+        menu.Items.Add("Сервер", null, async (_, _) =>
+            await ApplyDeliveryPathAsync(ChatDeliveryPath.Server).ConfigureAwait(true));
+        menu.Items.Add("Mesh (UDP/BLE)", null, async (_, _) =>
+            await ApplyDeliveryPathAsync(ChatDeliveryPath.Mesh).ConfigureAwait(true));
+        menu.Show(_deliveryPath, new Point(0, _deliveryPath.Height));
+    }
+
+    private async Task ApplyDeliveryPathAsync(ChatDeliveryPath path)
+    {
+        if (_p2pSession == null)
+            return;
+
+        _logger.LogInformation("Chat {Peer}: switch delivery path to {Path}", _chat.PeerNickname, path);
+        try
+        {
+            await _p2pSession.SwitchDeliveryPathAsync(path).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Delivery path switch failed for chat {ChatId}", _chat.Id);
+            MessageBox.Show(this, ex.Message, "Путь доставки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        RefreshDeliveryPathButton();
     }
 
     private void OnChatListChanged(object? sender, EventArgs e)
@@ -359,11 +414,16 @@ public sealed partial class ChatForm : AppForm
         _p2pSession?.ApplyChatRow(fresh);
         if (IsHandleCreated && InvokeRequired)
         {
-            BeginInvoke(new Action(() => Text = FormatTitle(_chat)));
+            BeginInvoke(new Action(() =>
+            {
+                Text = FormatTitle(_chat);
+                RefreshDeliveryPathButton();
+            }));
             return;
         }
 
         Text = FormatTitle(_chat);
+        RefreshDeliveryPathButton();
     }
 
     private async Task RefreshSidebarAsync()
