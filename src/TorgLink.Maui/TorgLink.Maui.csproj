@@ -18,8 +18,8 @@
 
         <ApplicationTitle>TorgLink</ApplicationTitle>
         <ApplicationId>com.torglink.maui</ApplicationId>
-        <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
-        <ApplicationVersion>7</ApplicationVersion>
+        <ApplicationDisplayVersion>0.2</ApplicationDisplayVersion>
+        <ApplicationVersion>8</ApplicationVersion>
 
         <!-- Unpackaged WinUI (same as ShortP2P.MauiApp). Do not set EnableMsixTooling here:
              it is evaluated after NuGet props and breaks WinUI's CustomBeforeMicrosoftCommonTargets chain
