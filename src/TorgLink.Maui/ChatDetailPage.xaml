@@ -134,8 +134,12 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Label x:Name="DeliveryIssueLabel" Grid.Row="2" TextColor="{DynamicResource Danger}" IsVisible="False"
-                   LineBreakMode="WordWrap" Margin="12,0" FontSize="12" />
+            <VerticalStackLayout Grid.Row="2" Margin="12,0" Spacing="2">
+                <Label x:Name="SessionStatusLabel" FontSize="12"
+                       TextColor="{DynamicResource MutedText}" LineBreakMode="TailTruncation" />
+                <Label x:Name="DeliveryIssueLabel" TextColor="{DynamicResource Danger}" IsVisible="False"
+                       LineBreakMode="WordWrap" FontSize="12" />
+            </VerticalStackLayout>
 
             <Grid Grid.Row="3" Padding="8,6,8,10" RowDefinitions="Auto,Auto" RowSpacing="6"
                   BackgroundColor="{DynamicResource Surface}">

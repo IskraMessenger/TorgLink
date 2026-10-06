@@ -297,6 +297,8 @@ internal static partial class StringCatalog
         ["chat.path_auto"] = "Path: auto",
         ["chat.path_server"] = "Path: server",
         ["chat.path_mesh"] = "Path: mesh",
+        ["chat.session_negotiating"] = "согласование сессии",
+        ["chat.session_established"] = "сессия установлена",
         ["chat.path_title"] = "Delivery path",
         ["chat.path_hint"] =
             "Switch this chat to server or mesh (UDP/BLE). Manual choice stays until you switch again.",

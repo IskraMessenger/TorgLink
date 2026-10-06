@@ -298,6 +298,8 @@ internal static partial class StringCatalog
         ["chat.path_auto"] = "Путь: авто",
         ["chat.path_server"] = "Путь: сервер",
         ["chat.path_mesh"] = "Путь: mesh",
+        ["chat.session_negotiating"] = "согласование сессии",
+        ["chat.session_established"] = "сессия установлена",
         ["chat.path_title"] = "Путь доставки",
         ["chat.path_hint"] =
             "Переключить доставку этого чата: сервер или mesh (UDP/BLE). Ручной выбор держится, пока не переключите обратно.",

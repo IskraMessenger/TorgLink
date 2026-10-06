@@ -293,6 +293,8 @@ internal static partial class StringCatalog
         ["chat.path_auto"] = "路径：自动",
         ["chat.path_server"] = "路径：服务器",
         ["chat.path_mesh"] = "路径：mesh",
+        ["chat.session_negotiating"] = "согласование сессии",
+        ["chat.session_established"] = "сессия установлена",
         ["chat.path_title"] = "投递路径",
         ["chat.path_hint"] =
             "将此聊天切换为服务器或 mesh（UDP/BLE）。手动选择会保持，直到再次切换。",

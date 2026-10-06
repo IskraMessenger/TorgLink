@@ -205,6 +205,7 @@ public partial class ChatDetailPage : ContentPage
         // Session object + history first; nickname / P2P handshake stay off the critical path.
         EnsureP2pSessionAttached(user, chat);
         RefreshDeliveryPathButton();
+        RefreshSessionStatusLabel();
 
         if (_hooksAttached && _boundChatId == chat.Id)
         {
@@ -247,6 +248,7 @@ public partial class ChatDetailPage : ContentPage
                 _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
                 _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
                 _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+                _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
             }
 
             var uiSync = SynchronizationContext.Current;
@@ -259,6 +261,9 @@ public partial class ChatDetailPage : ContentPage
                 _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
                 _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
                 _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+                _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
+                _p2pSession.HandshakeStatusChanged += OnHandshakeStatusChanged;
+                RefreshSessionStatusLabel();
             }
 
             TryBeginConnectChatTransport(user, chat, _p2pSession);
@@ -411,6 +416,9 @@ public partial class ChatDetailPage : ContentPage
             _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
             _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
             _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+            _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
+            _p2pSession.HandshakeStatusChanged += OnHandshakeStatusChanged;
+            RefreshSessionStatusLabel();
         }
 
         _hooksAttached = true;
@@ -434,6 +442,7 @@ public partial class ChatDetailPage : ContentPage
             _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
             _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
             _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+            _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
         }
 
         _hooksAttached = false;
@@ -1737,6 +1746,22 @@ public partial class ChatDetailPage : ContentPage
         MainThread.BeginInvokeOnMainThread(RefreshDeliveryPathButton);
     }
 
+    private void OnHandshakeStatusChanged(object? sender, EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(RefreshSessionStatusLabel);
+    }
+
+    private void RefreshSessionStatusLabel()
+    {
+        var status = _p2pSession?.HandshakeStatus ?? ChatHandshakeStatus.Idle;
+        SessionStatusLabel.Text = status switch
+        {
+            ChatHandshakeStatus.InProgress => Loc.T("chat.session_negotiating"),
+            ChatHandshakeStatus.Established => Loc.T("chat.session_established"),
+            _ => string.Empty
+        };
+    }
+
     private async void OnPathModeClicked(object? sender, EventArgs e)
     {
         if (_p2pSession == null)
@@ -1771,6 +1796,7 @@ public partial class ChatDetailPage : ContentPage
         }
 
         RefreshDeliveryPathButton();
+        RefreshSessionStatusLabel();
     }
 
     private async void OnBlockPeerClicked(object? sender, EventArgs e)
