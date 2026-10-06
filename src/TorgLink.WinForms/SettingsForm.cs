@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client.Routing;
+using ShortP2P.Client.Services;
+using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Crypto;
 using ShortP2P.Discovery;
 using SixLabors.ImageSharp;
@@ -21,6 +23,9 @@ public sealed partial class SettingsForm : AppForm
     private const int AvatarDimension = 512;
 
     private readonly AuthService _auth = null!;
+    private readonly ChatRepository _chats = null!;
+    private readonly ChatSessionCache _sessions = null!;
+    private readonly MessengerServerSyncService _sync = null!;
     private readonly P2pRoutingSettings _live = null!;
     private readonly P2pRoutingSettingsStore _store = null!;
     private readonly string _appRoot = null!;
@@ -35,12 +40,18 @@ public sealed partial class SettingsForm : AppForm
 
     public SettingsForm(
         AuthService auth,
+        ChatRepository chats,
+        ChatSessionCache sessions,
+        MessengerServerSyncService sync,
         P2pRoutingSettings live,
         P2pRoutingSettingsStore store,
         ILogger<SettingsForm> logger)
         : this()
     {
         _auth = auth;
+        _chats = chats;
+        _sessions = sessions;
+        _sync = sync;
         _live = live;
         _store = store;
         _logger = logger;
@@ -340,6 +351,8 @@ public sealed partial class SettingsForm : AppForm
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+
+                _ = BroadcastLocalUserInfoToContactsAsync();
             }
 
             var s = await _store.LoadAsync().ConfigureAwait(true);
@@ -370,6 +383,41 @@ public sealed partial class SettingsForm : AppForm
         {
             _logger.LogWarning(ex, "Save settings");
             MessageBox.Show(this, ex.Message, "Настройки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    /// <summary>TRL-7: push AboutMe + Avatar to every chat contact via messenger-server path (best-effort).</summary>
+    private async Task BroadcastLocalUserInfoToContactsAsync()
+    {
+        var user = _auth.CurrentUser;
+        if (user == null)
+            return;
+
+        try
+        {
+            var chats = await _chats.ListChatsAsync(user.Id).ConfigureAwait(false);
+            foreach (var chat in chats)
+            {
+                try
+                {
+                    if (await _chats.IsPeerBlockedAsync(user.Id, chat.PeerNetworkIdShort).ConfigureAwait(false))
+                        continue;
+
+                    var session = _sessions.GetSession(
+                        chat.Id,
+                        () => new ChatP2PSession(chat, user, _chats, _sync, null, _logger),
+                        s => s.ApplyChatRow(chat));
+                    await session.SendLocalUserInfoAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "UserInfo broadcast to chat {ChatId} failed (best-effort)", chat.Id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "UserInfo broadcast failed (best-effort)");
         }
     }
 
