@@ -13,6 +13,7 @@ using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery;
+using ShortP2P.Discovery.Profile;
 
 namespace TorgLink.Maui;
 
@@ -184,6 +185,7 @@ public partial class ChatDetailPage : ContentPage
             chat.PeerNetworkIdShort, null);
         PeerIdLabel.Text = Loc.Tf("chat.node", chat.PeerNetworkIdShort);
         await RefreshSidebarAsync().ConfigureAwait(true);
+        _ = ApplyPeerAvatarBestEffortAsync(chat, chat.PeerNickname);
         SetControlHint(BlockPeerButton, Loc.T("blacklist.add_hint"));
         SetControlHint(ClearChatButton, Loc.T("chat.delete_hint"));
         SetControlHint(EmergencyUntrustButton, Loc.T("safety.untrust_hint"));
@@ -408,6 +410,13 @@ public partial class ChatDetailPage : ContentPage
         _repo.ChatMessageDeliveryChanged += OnChatMessageDeliveryChanged;
         _messengerServers.FailoverCompleted -= OnMessengerServerFailover;
         _messengerServers.FailoverCompleted += OnMessengerServerFailover;
+        var profiles = _p2p.PeerProfiles;
+        if (profiles != null)
+        {
+            profiles.Changed -= OnPeerProfileChanged;
+            profiles.Changed += OnPeerProfileChanged;
+        }
+
         if (_p2pSession != null)
         {
             _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
@@ -435,6 +444,9 @@ public partial class ChatDetailPage : ContentPage
         _repo.ChatMessageAppended -= OnChatMessageAppended;
         _repo.ChatMessageDeliveryChanged -= OnChatMessageDeliveryChanged;
         _messengerServers.FailoverCompleted -= OnMessengerServerFailover;
+        var profiles = _p2p.PeerProfiles;
+        if (profiles != null)
+            profiles.Changed -= OnPeerProfileChanged;
         if (_presenceRefreshTimer != null)
             _presenceRefreshTimer.Stop();
         if (_p2pSession != null)
@@ -453,6 +465,43 @@ public partial class ChatDetailPage : ContentPage
         Interlocked.Increment(ref _transportConnectGeneration);
         Interlocked.Exchange(ref _transportConnectInFlight, 0);
         Interlocked.Increment(ref _viewEpoch);
+    }
+
+    private void OnPeerProfileChanged(object? sender, PeerProfileChangedEventArgs e)
+    {
+        var peer = _peerNetworkIdShort;
+        var id = e.NetworkId.ToShortString();
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _ = PatchSidebarAvatarAsync(id);
+            if (peer != null && ChatRepository.PeerNetworkIdsEqual(peer, id) && _chat != null)
+                _ = ApplyPeerAvatarBestEffortAsync(_chat, PeerNameLabel.Text ?? _chat.PeerNickname);
+        });
+    }
+
+    private async Task PatchSidebarAvatarAsync(string peerNetworkIdShort)
+    {
+        try
+        {
+            var store = _p2p.PeerProfiles;
+            if (store == null)
+                return;
+            var snap = await store.GetAsync(CompressedNetworkId.FromShortString(peerNetworkIdShort))
+                .ConfigureAwait(false);
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                foreach (var row in _allSidebarRows)
+                {
+                    if (!ChatRepository.PeerNetworkIdsEqual(row.PeerNetworkIdShort, peerNetworkIdShort))
+                        continue;
+                    row.SetAvatar(snap?.Avatar);
+                }
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Patch sidebar avatar for {NetworkId}", peerNetworkIdShort);
+        }
     }
 
     private void OnPeerLanPresenceChanged(object? sender, EventArgs e)
@@ -1445,6 +1494,8 @@ public partial class ChatDetailPage : ContentPage
                 rows.Add(new ChatListRowVm(c, last, _p2p.LocalScan.IsPeerSeenRecentlyOnLan(c.PeerNetworkIdShort)));
             }
 
+            await ApplySidebarAvatarsAsync(rows).ConfigureAwait(false);
+
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 _allSidebarRows.Clear();
@@ -1457,6 +1508,27 @@ public partial class ChatDetailPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Refresh sidebar for chat detail page");
+        }
+    }
+
+    private async Task ApplySidebarAvatarsAsync(IReadOnlyList<ChatListRowVm> rows)
+    {
+        var store = _p2p.PeerProfiles;
+        if (store == null || rows.Count == 0)
+            return;
+
+        foreach (var row in rows)
+        {
+            try
+            {
+                var snap = await store.GetAsync(CompressedNetworkId.FromShortString(row.PeerNetworkIdShort))
+                    .ConfigureAwait(false);
+                row.SetAvatar(snap?.Avatar);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Load sidebar peer avatar for {NetworkId}", row.PeerNetworkIdShort);
+            }
         }
     }
 
@@ -1550,11 +1622,11 @@ public partial class ChatDetailPage : ContentPage
                     .ConfigureAwait(true);
                 if (snap != null)
                 {
-                    if (snap.Avatar is { Length: > PeerProfileLimits.MaxAvatarBytes })
+                    if (snap.Avatar is { Length: > PeerProfileLimits.MaxAvatarDisplayBytes })
                     {
                         _logger.LogWarning(
                             "Peer avatar for {NetworkId} is {Bytes} bytes (max {Max}); ignoring oversized blob",
-                            chat.PeerNetworkIdShort, snap.Avatar.Length, PeerProfileLimits.MaxAvatarBytes);
+                            chat.PeerNetworkIdShort, snap.Avatar.Length, PeerProfileLimits.MaxAvatarDisplayBytes);
                     }
                     else
                         avatar = snap.Avatar;

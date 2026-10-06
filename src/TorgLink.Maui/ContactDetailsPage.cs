@@ -156,11 +156,11 @@ public sealed class ContactDetailsPage : ContentPage
 
             var nick = string.IsNullOrWhiteSpace(snap.Nickname) ? _nickname : snap.Nickname.Trim();
             byte[]? avatar = snap.Avatar;
-            if (avatar is { Length: > PeerProfileLimits.MaxAvatarBytes })
+            if (avatar is { Length: > PeerProfileLimits.MaxAvatarDisplayBytes })
             {
                 _logger?.LogWarning(
                     "Peer avatar for {NetworkId} is {Bytes} bytes (max {Max}); ignoring oversized blob",
-                    _networkIdShort, avatar.Length, PeerProfileLimits.MaxAvatarBytes);
+                    _networkIdShort, avatar.Length, PeerProfileLimits.MaxAvatarDisplayBytes);
                 avatar = null;
             }
 
