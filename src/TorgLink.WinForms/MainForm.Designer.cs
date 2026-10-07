@@ -11,6 +11,7 @@ partial class MainForm
     private Button _btnMyQr;
     private Button _btnSettings;
     private System.Windows.Forms.Button _btnLogout;
+    private System.Windows.Forms.TextBox _search;
     private System.Windows.Forms.ListBox _list;
     private Label _status;
 
@@ -35,6 +36,7 @@ partial class MainForm
         this._btnMyQr = new System.Windows.Forms.Button();
         this._btnSettings = new System.Windows.Forms.Button();
         this._btnLogout = new System.Windows.Forms.Button();
+        this._search = new System.Windows.Forms.TextBox();
         this._list = new System.Windows.Forms.ListBox();
         this._status = new System.Windows.Forms.Label();
         this._root.SuspendLayout();
@@ -46,12 +48,14 @@ partial class MainForm
         this._root.ColumnCount = 1;
         this._root.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
         this._root.Controls.Add(this._toolbar, 0, 0);
-        this._root.Controls.Add(this._list, 0, 1);
-        this._root.Controls.Add(this._status, 0, 2);
+        this._root.Controls.Add(this._search, 0, 1);
+        this._root.Controls.Add(this._list, 0, 2);
+        this._root.Controls.Add(this._status, 0, 3);
         this._root.Dock = System.Windows.Forms.DockStyle.Fill;
         this._root.Location = new System.Drawing.Point(0, 0);
         this._root.Name = "_root";
-        this._root.RowCount = 3;
+        this._root.RowCount = 4;
+        this._root.RowStyles.Add(new System.Windows.Forms.RowStyle());
         this._root.RowStyles.Add(new System.Windows.Forms.RowStyle());
         this._root.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
         this._root.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -128,26 +132,35 @@ partial class MainForm
         this._btnLogout.TabIndex = 6;
         this._btnLogout.Text = "Выйти";
         // 
+        // _search
+        // 
+        this._search.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._search.Location = new System.Drawing.Point(3, 59);
+        this._search.Margin = new System.Windows.Forms.Padding(3, 0, 3, 6);
+        this._search.Name = "_search";
+        this._search.Size = new System.Drawing.Size(634, 29);
+        this._search.TabIndex = 1;
+        // 
         // _list
         // 
         this._list.Dock = System.Windows.Forms.DockStyle.Fill;
         this._list.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
         this._list.IntegralHeight = false;
-        this._list.Location = new System.Drawing.Point(3, 62);
+        this._list.Location = new System.Drawing.Point(3, 94);
         this._list.Name = "_list";
-        this._list.Size = new System.Drawing.Size(634, 359);
-        this._list.TabIndex = 1;
+        this._list.Size = new System.Drawing.Size(634, 327);
+        this._list.TabIndex = 2;
         // 
         // _status
         // 
         this._status.AutoSize = true;
         this._status.Dock = System.Windows.Forms.DockStyle.Top;
-        this._status.Location = new System.Drawing.Point(3, 424);
+        this._status.Location = new System.Drawing.Point(3, 427);
         this._status.MinimumSize = new System.Drawing.Size(0, 56);
         this._status.Name = "_status";
         this._status.Padding = new System.Windows.Forms.Padding(10, 12, 10, 12);
         this._status.Size = new System.Drawing.Size(634, 56);
-        this._status.TabIndex = 2;
+        this._status.TabIndex = 3;
         this._status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
         // 
         // MainForm

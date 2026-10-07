@@ -40,6 +40,7 @@ public sealed partial class LanScanForm : AppForm
     private readonly Func<Task>? _refreshChats;
 
     private readonly List<ContactRow> _rows = [];
+    private string _searchQuery = string.Empty;
     private bool _scanning;
 
     public LanScanForm()
@@ -73,6 +74,11 @@ public sealed partial class LanScanForm : AppForm
 
         _scan.Click += async (_, _) => await OnScanAsync().ConfigureAwait(true);
         _list.ItemActivate += async (_, _) => await OnActivateAsync().ConfigureAwait(true);
+        _search.TextChanged += (_, _) =>
+        {
+            _searchQuery = _search.Text.Trim();
+            BindList();
+        };
 
         // Known chats (+ already-discovered peers). No GetClients/LAN probe until «Сканировать».
         Shown += async (_, _) =>
@@ -138,11 +144,17 @@ public sealed partial class LanScanForm : AppForm
     private void BindList()
     {
         EnsureListColumns();
+        IEnumerable<ContactRow> visible = _rows;
+        if (_searchQuery.Length > 0)
+            visible = _rows.Where(r =>
+                r.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                r.NetworkId.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+
         _list.BeginUpdate();
         try
         {
             _list.Items.Clear();
-            foreach (var r in _rows)
+            foreach (var r in visible)
             {
                 var item = new ListViewItem(r.Name) { Tag = r };
                 item.SubItems.Add(r.NetworkId);
