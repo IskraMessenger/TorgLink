@@ -55,6 +55,7 @@ partial class SettingsForm
     private System.Windows.Forms.FlowLayoutPanel _buttons;
     private System.Windows.Forms.Button _save;
     private System.Windows.Forms.Button _keys;
+    private System.Windows.Forms.Button _exportProfile;
     private System.Windows.Forms.Button _about;
     private System.Windows.Forms.Button _close;
 
@@ -127,6 +128,7 @@ partial class SettingsForm
         this._buttons = new System.Windows.Forms.FlowLayoutPanel();
         this._save = new System.Windows.Forms.Button();
         this._keys = new System.Windows.Forms.Button();
+        this._exportProfile = new System.Windows.Forms.Button();
         this._about = new System.Windows.Forms.Button();
         this._close = new System.Windows.Forms.Button();
         this._root.SuspendLayout();
@@ -657,6 +659,7 @@ partial class SettingsForm
         this._buttons.AutoSize = true;
         this._buttons.Controls.Add(this._save);
         this._buttons.Controls.Add(this._keys);
+        this._buttons.Controls.Add(this._exportProfile);
         this._buttons.Controls.Add(this._about);
         this._buttons.Controls.Add(this._close);
         this._buttons.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -683,6 +686,15 @@ partial class SettingsForm
         this._keys.Size = new System.Drawing.Size(170, 35);
         this._keys.TabIndex = 1;
         this._keys.Text = "Копировать ключи";
+        //
+        // _exportProfile
+        //
+        this._exportProfile.AutoSize = true;
+        this._exportProfile.Location = new System.Drawing.Point(295, 3);
+        this._exportProfile.Name = "_exportProfile";
+        this._exportProfile.Size = new System.Drawing.Size(190, 35);
+        this._exportProfile.TabIndex = 2;
+        this._exportProfile.Text = "Экспорт профиля (.tlp)…";
         //
         // _about
         //

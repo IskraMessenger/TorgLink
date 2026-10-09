@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
+using ShortP2P.Client.ProfileBackup;
 
 namespace TorgLink.WinForms;
 
@@ -23,6 +24,7 @@ public sealed partial class LoginForm : AppForm
         _logger = logger;
         _login.Click += async (_, _) => await OnLoginAsync().ConfigureAwait(true);
         _register.Click += OnRegister;
+        _import.Click += async (_, _) => await OnImportAsync().ConfigureAwait(true);
         Load += async (_, _) =>
         {
             if (await _auth.TryRestoreSessionAsync().ConfigureAwait(true) && _auth.CurrentUser != null)
@@ -55,5 +57,17 @@ public sealed partial class LoginForm : AppForm
             DialogResult = DialogResult.OK;
             Close();
         }
+    }
+
+    private async Task OnImportAsync()
+    {
+        var backup = _services.GetRequiredService<ProfileBackupService>();
+        if (!await ProfileFileShare.ImportProfileAsync(this, _auth, backup, _logger).ConfigureAwait(true))
+            return;
+
+        // DialogResult.OK lets Program.cs run the usual post-login bootstrap
+        // (LAN scanner + MessengerServersBootstrap) for the restored user.
+        DialogResult = DialogResult.OK;
+        Close();
     }
 }

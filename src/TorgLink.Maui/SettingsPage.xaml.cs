@@ -5,6 +5,7 @@ using TorgLink.Maui.Services;
 using ShortP2P.Auth;
 using ShortP2P.Client.Bluetooth;
 using ShortP2P.Client.Data.Abstractions;
+using ShortP2P.Client.ProfileBackup;
 using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
@@ -19,10 +20,12 @@ public partial class SettingsPage : ContentPage
     private readonly UserP2pRuntime _p2p;
     private readonly P2pRoutingSettingsStore _store;
     private readonly DatabaseProviderSettings _databaseSettings;
+    private readonly ProfileBackupService _profileBackup;
     private bool _suppressToggle;
 
     public SettingsPage(AuthService auth, UserP2pRuntime p2p, P2pRoutingSettingsStore store,
-        IBluetoothTransportProvider bluetoothTransport, DatabaseProviderSettings databaseSettings, ILogger<SettingsPage> logger)
+        IBluetoothTransportProvider bluetoothTransport, DatabaseProviderSettings databaseSettings, ILogger<SettingsPage> logger,
+        ProfileBackupService profileBackup)
     {
         InitializeComponent();
         _auth = auth;
@@ -31,6 +34,7 @@ public partial class SettingsPage : ContentPage
         _bluetoothTransport = bluetoothTransport;
         _databaseSettings = databaseSettings;
         _logger = logger;
+        _profileBackup = profileBackup;
         LanguageService.Changed += OnLanguageChanged;
         ProfileRow.GestureRecognizers.Add(new TapGestureRecognizer
         {
@@ -121,6 +125,7 @@ public partial class SettingsPage : ContentPage
         EconomyLabel.Text = Loc.T("settings.economy");
         StorageTitleLabel.Text = Loc.T("settings.storage");
         ExportKeysButton.Text = Loc.T("settings.export_keys");
+        ExportProfileButton.Text = Loc.T("settings.export_profile");
         RoutingOpenButton.Text = Loc.T("settings.routing_open");
         ConnectionTestButton.Text = Loc.T("settings.connection_test");
         LogsButton.Text = Loc.T("settings.logs");
@@ -407,6 +412,9 @@ public partial class SettingsPage : ContentPage
 
     private async void OnExportKeysClicked(object? sender, EventArgs e) =>
         await ProfileShare.CopyKeysAsync(this, _auth).ConfigureAwait(true);
+
+    private async void OnExportProfileClicked(object? sender, EventArgs e) =>
+        await ProfileFileShare.ExportProfileAsync(this, _auth, _profileBackup, _logger).ConfigureAwait(true);
 
     private async void OnOpenRoutingClicked(object? sender, EventArgs e) =>
         await Navigation.PushAsync(MauiProgram.Services.GetRequiredService<RoutingSettingsPage>()).ConfigureAwait(true);

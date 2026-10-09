@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
+using ShortP2P.Client.ProfileBackup;
 using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
@@ -23,6 +24,7 @@ public sealed partial class SettingsForm : AppForm
     private const int AvatarDimension = 512;
 
     private readonly AuthService _auth = null!;
+    private readonly ProfileBackupService _backup = null!;
     private readonly ChatRepository _chats = null!;
     private readonly ChatSessionCache _sessions = null!;
     private readonly MessengerServerSyncService _sync = null!;
@@ -40,6 +42,7 @@ public sealed partial class SettingsForm : AppForm
 
     public SettingsForm(
         AuthService auth,
+        ProfileBackupService backup,
         ChatRepository chats,
         ChatSessionCache sessions,
         MessengerServerSyncService sync,
@@ -49,6 +52,7 @@ public sealed partial class SettingsForm : AppForm
         : this()
     {
         _auth = auth;
+        _backup = backup;
         _chats = chats;
         _sessions = sessions;
         _sync = sync;
@@ -87,6 +91,8 @@ public sealed partial class SettingsForm : AppForm
 
         _save.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
         _keys.Click += (_, _) => CopyKeys();
+        _exportProfile.Click += async (_, _) =>
+            await ProfileFileShare.ExportProfileAsync(this, _auth, _backup, _logger).ConfigureAwait(true);
         _about.Click += (_, _) => MessageBox.Show(this,
             "Mesh-мессенджер.\nTorgLink.WinForms 0.2 (.NET Framework 4.7.2)\nWindows 7 SP1+\nБез BLE и камеры. QR — из файла.",
             "TorgLink", MessageBoxButtons.OK, MessageBoxIcon.Information);

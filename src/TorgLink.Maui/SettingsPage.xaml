@@ -105,6 +105,9 @@
             <Button x:Name="ExportKeysButton" Clicked="OnExportKeysClicked" BackgroundColor="Transparent"
                     TextColor="{DynamicResource MidnightBlue}" HorizontalOptions="Fill" Padding="16,14" />
             <BoxView HeightRequest="1" Color="{DynamicResource Hairline}" Margin="16,0" />
+            <Button x:Name="ExportProfileButton" Clicked="OnExportProfileClicked" BackgroundColor="Transparent"
+                    TextColor="{DynamicResource MidnightBlue}" HorizontalOptions="Fill" Padding="16,14" />
+            <BoxView HeightRequest="1" Color="{DynamicResource Hairline}" Margin="16,0" />
             <Button x:Name="RoutingOpenButton" Clicked="OnOpenRoutingClicked" BackgroundColor="Transparent"
                     TextColor="{DynamicResource MidnightBlue}" HorizontalOptions="Fill" Padding="16,14" />
             <BoxView HeightRequest="1" Color="{DynamicResource Hairline}" Margin="16,0" />

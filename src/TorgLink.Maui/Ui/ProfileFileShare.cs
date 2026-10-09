@@ -1,0 +1,166 @@
+using Microsoft.Extensions.Logging;
+using ShortP2P.Auth;
+using ShortP2P.Client.ProfileBackup;
+using TorgLink.Maui.Localization;
+using TorgLink.Maui.Services;
+
+namespace TorgLink.Maui;
+
+/// <summary>
+/// TRL-10: export/import of the Logopass profile as a <c>.tlp</c> file.
+/// Export lives in Settings, import on the login form (auto-login after apply).
+/// </summary>
+internal static class ProfileFileShare
+{
+    public static async Task ExportProfileAsync(
+        Page host,
+        AuthService auth,
+        ProfileBackupService backup,
+        ILogger logger)
+    {
+        var u = auth.CurrentUser;
+        if (u == null)
+            return;
+
+        // The master password is standalone: set right away, not checked against anything.
+        var master = await PasswordPromptPage.ShowNewAsync(host,
+            Loc.T("profilex.export_title"),
+            Loc.T("profilex.master_body"),
+            Loc.T("profilex.master_ph"),
+            Loc.T("profilex.master_confirm_ph")).ConfigureAwait(true);
+        if (master == null)
+            return;
+
+        byte[] bytes;
+        try
+        {
+            var (ok, err, fileBytes) = await backup.ExportAsync(u.Id, master).ConfigureAwait(true);
+            if (!ok || fileBytes == null)
+            {
+                logger.LogWarning("Profile export failed: {Error}", err);
+                await host.DisplayAlert(Loc.T("profilex.export_title"), LocalizeError(err), Loc.T("ok"))
+                    .ConfigureAwait(true);
+                return;
+            }
+
+            bytes = fileBytes;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Profile export failed");
+            await host.DisplayAlert(Loc.T("profilex.export_title"), ex.Message, Loc.T("ok"))
+                .ConfigureAwait(true);
+            return;
+        }
+
+        var name = $"torglink_profile_{DateTime.Now:dd.MM.yyyy_HH_mm_ss}.tlp";
+        var temp = Path.Combine(FileSystem.CacheDirectory, name);
+        await File.WriteAllBytesAsync(temp, bytes).ConfigureAwait(true);
+        var saved = await MediaFileSaver.SaveAsync(temp, name).ConfigureAwait(true);
+        if (saved)
+        {
+            AppLog.Ui.LogInformation("Profile exported to {FileName}", name);
+            await host.DisplayAlert(Loc.T("profilex.export_title"), Loc.T("profilex.exported"), Loc.T("ok"))
+                .ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Returns true when the profile was applied and the user is signed in.</summary>
+    public static async Task<bool> ImportProfileAsync(
+        Page host,
+        AuthService auth,
+        ProfileBackupService backup,
+        ILogger logger)
+    {
+        FileResult? picked;
+        try
+        {
+            picked = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = Loc.T("profilex.picker_title"),
+                FileTypes = TlpFileTypes
+            }).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Pick .tlp profile file");
+            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+                .ConfigureAwait(true);
+            return false;
+        }
+
+        if (picked == null)
+            return false;
+
+        byte[] bytes;
+        try
+        {
+            await using var stream = await picked.OpenReadAsync().ConfigureAwait(true);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms).ConfigureAwait(true);
+            bytes = ms.ToArray();
+            AppLog.BinaryLoaded("tlp-profile", picked.FileName, bytes.Length);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Read .tlp profile file");
+            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+                .ConfigureAwait(true);
+            return false;
+        }
+
+        var master = await PasswordPromptPage.ShowAsync(host,
+            Loc.T("profilex.import_title"),
+            Loc.T("profilex.master_unlock_body"),
+            Loc.T("profilex.master_ph")).ConfigureAwait(true);
+        if (master == null)
+            return false;
+
+        try
+        {
+            var (result, user) = await backup.ImportAsync(bytes, master).ConfigureAwait(true);
+            if (!result.Ok || user == null)
+            {
+                logger.LogWarning("Profile import failed: {Error}", result.Error);
+                await host.DisplayAlert(Loc.T("profilex.import_title"), LocalizeError(result.Error), Loc.T("ok"))
+                    .ConfigureAwait(true);
+                return false;
+            }
+
+            // Auto-login: persist the session exactly like a password sign-in. Server re-login
+            // (AccountPassword) happens silently once the shell starts connectivity.
+            await auth.AdoptRestoredUserAsync(user).ConfigureAwait(true);
+            AppLog.Ui.LogInformation(
+                "Profile imported: {Nickname} id={Id}, servers={Servers}",
+                user.Nickname,
+                user.NetworkIdShort,
+                result.Preview?.ServerCount ?? 0);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Profile import failed");
+            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+                .ConfigureAwait(true);
+            return false;
+        }
+    }
+
+    private static readonly FilePickerFileType TlpFileTypes = new(
+        new Dictionary<DevicePlatform, IEnumerable<string>>
+        {
+            [DevicePlatform.WinUI] = [".tlp"],
+            [DevicePlatform.Android] = ["*/*"]
+        });
+
+    private static string LocalizeError(string? err) => err switch
+    {
+        ProfileBackupService.ErrorMasterPasswordRequired => Loc.T("pass.empty"),
+        ProfileBackupService.ErrorUnsupportedSaltSize => Loc.T("profilex.export_bad_account"),
+        ProfileBackupService.ErrorBadFileOrPassword => Loc.T("profilex.import_bad_file"),
+        ProfileBackupService.ErrorUnsupportedPasswordParams => Loc.T("profilex.import_bad_file"),
+        ProfileBackupService.ErrorNicknameTaken => Loc.T("profilex.import_conflict_nick"),
+        null => Loc.T("profilex.import_bad_file"),
+        _ => err
+    };
+}
