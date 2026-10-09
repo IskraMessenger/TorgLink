@@ -9,6 +9,7 @@ using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Crypto;
 using ShortP2P.Discovery;
 using ShortP2P.Transport;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -79,12 +80,24 @@ public sealed partial class MainForm : AppForm
             ApplyFilter();
         };
 
+        ApplyLocalizedUi();
         Load += OnLoad;
         Shown += (_, _) => UpdateStatusWrapWidth();
         Activated += (_, _) => ScheduleReload();
         FormClosed += OnFormClosed;
         Resize += (_, _) => UpdateStatusWrapWidth();
         _refreshTimer.Tick += (_, _) => ScheduleReload();
+    }
+
+    protected override void ApplyLocalizedUi()
+    {
+        Text = "TorgLink";
+        _btnAdd.Text = LocalizationUtils.GetStringByKey("network.add_chat");
+        _btnLan.Text = LocalizationUtils.GetStringByKey("tab.contacts");
+        _btnServers.Text = LocalizationUtils.GetStringByKey("network.servers");
+        _btnMyQr.Text = LocalizationUtils.GetStringByKey("network.my_qr");
+        _btnSettings.Text = LocalizationUtils.GetStringByKey("tab.settings");
+        _btnLogout.Text = LocalizationUtils.GetStringByKey("settings.logout");
     }
 
     private void ApplyListRowHeight()

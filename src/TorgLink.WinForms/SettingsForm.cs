@@ -11,6 +11,8 @@ using ShortP2P.Discovery;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
+using TorgLink.Localization;
+using TorgLink.WinForms.Localization;
 using Img = SixLabors.ImageSharp.Image;
 using Rectangle = SixLabors.ImageSharp.Rectangle;
 
@@ -34,6 +36,10 @@ public sealed partial class SettingsForm : AppForm
     private readonly ILogger<SettingsForm> _logger = null!;
 
     private byte[]? _avatarBytes;
+    private TabPage? _tabLanguage;
+    private LanguageTilesPanel? _languageTiles;
+    private Label? _languageWarning;
+    private Label? _languageSection;
 
     public SettingsForm()
     {
@@ -63,6 +69,8 @@ public sealed partial class SettingsForm : AppForm
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TorgLink", "WinForms");
 
+        BuildLanguageTab();
+
         foreach (var mode in new[]
                  {
                      TrafficQualityMode.Normal, TrafficQualityMode.Economy, TrafficQualityMode.UltraEconomy
@@ -74,12 +82,7 @@ public sealed partial class SettingsForm : AppForm
 
         _economy.SelectedIndexChanged += (_, _) => UpdateEconomyHint();
 
-        // Runtime values from shared constants (Designer.cs keeps plain literals for the WinForms designer)
-        _aboutLabel.Text = $"О себе (до {PeerProfileLimits.MaxAboutMeChars} символов):";
         _aboutMe.MaxLength = PeerProfileLimits.MaxAboutMeChars;
-        _hint.Text =
-            $"Аватар — квадратная обрезка {AvatarDimension}×{AvatarDimension}, до {PeerProfileLimits.MaxAvatarBytes / 1024} КБ. " +
-            "Данные хранятся только локально и отдаются пирам при скане сети.";
 
         _loadAvatar.Click += (_, _) => OnLoadAvatar();
         _clearAvatar.Click += (_, _) =>
@@ -94,10 +97,81 @@ public sealed partial class SettingsForm : AppForm
         _exportProfile.Click += async (_, _) =>
             await ProfileFileShare.ExportProfileAsync(this, _auth, _backup, _logger).ConfigureAwait(true);
         _about.Click += (_, _) => MessageBox.Show(this,
-            "Mesh-мессенджер.\nTorgLink.WinForms 0.2 (.NET Framework 4.7.2)\nWindows 7 SP1+\nБез BLE и камеры. QR — из файла.",
+            LocalizationUtils.GetStringByKey("settings.about_body") +
+            "\nTorgLink.WinForms 0.2.0 (.NET Framework 4.7.2)\nWindows 7 SP1+",
             "TorgLink", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-        Load += async (_, _) => await LoadAsync().ConfigureAwait(true);
+        // Defer full ApplyLocalizedUi until Load (TabControl handle exists). Setting TabPage.Text
+        // before the native handle is ready throws ArgumentOutOfRangeException (index -1).
+        Load += async (_, _) =>
+        {
+            ApplyLocalizedUi();
+            await LoadAsync().ConfigureAwait(true);
+        };
+    }
+
+    private void BuildLanguageTab()
+    {
+        // Set Text while Parent is null — avoids TabControl.UpdateTab(index: -1).
+        _tabLanguage = new TabPage
+        {
+            Name = "_tabLanguage",
+            Text = LocalizationUtils.GetStringByKey("lang.title"),
+            UseVisualStyleBackColor = true
+        };
+        var page = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            Padding = new Padding(12),
+            AutoScroll = true
+        };
+        _languageSection = new Label { AutoSize = true, Margin = new Padding(3, 0, 3, 8) };
+        _languageTiles = new LanguageTilesPanel(LanguageService.Current, OnLanguageTileSelected);
+        _languageWarning = new Label
+        {
+            AutoSize = true,
+            ForeColor = System.Drawing.Color.DarkOrange,
+            MaximumSize = new System.Drawing.Size(700, 0),
+            Margin = new Padding(3, 12, 3, 0)
+        };
+        page.Controls.Add(_languageSection);
+        page.Controls.Add(_languageTiles);
+        page.Controls.Add(_languageWarning);
+        _tabLanguage.Controls.Add(page);
+        _tabs.TabPages.Insert(0, _tabLanguage);
+        _tabs.SelectedIndex = 0;
+    }
+
+    /// <summary>
+    /// TabPage.Text → UpdateParent → TabControl.UpdateTab requires a valid index in TabPages.
+    /// Before the TabControl handle exists (or if the page is not in the collection), IndexOf is -1 and WinForms throws.
+    /// </summary>
+    private static void SetTabPageText(TabPage? page, string text)
+    {
+        if (page == null || page.IsDisposed)
+            return;
+        if (string.Equals(page.Text, text, StringComparison.Ordinal))
+            return;
+
+        if (page.Parent is TabControl tabControl)
+        {
+            if (!tabControl.IsHandleCreated || tabControl.TabPages.IndexOf(page) < 0)
+                return;
+        }
+
+        page.Text = text;
+    }
+
+    private void OnLanguageTileSelected(AppLanguage language)
+    {
+        if (language == LanguageService.Current)
+            return;
+        var warn = LanguageService.TranslationWarning(language);
+        if (!string.IsNullOrEmpty(warn))
+            MessageBox.Show(this, warn, LanguageService.NativeName(language), MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        LanguageService.Set(language);
     }
 
     private async Task LoadAsync()
@@ -123,13 +197,79 @@ public sealed partial class SettingsForm : AppForm
         UpdateEconomyHint();
     }
 
+    protected override void ApplyLocalizedUi()
+    {
+        Text = LocalizationUtils.GetStringByKey("settings.title");
+        SetTabPageText(_tabLanguage, LocalizationUtils.GetStringByKey("lang.title"));
+        if (_languageSection != null)
+            _languageSection.Text = LocalizationUtils.GetStringByKey("lang.section");
+        if (_languageTiles != null)
+            _languageTiles.SetSelected(LanguageService.Current);
+        if (_languageWarning != null)
+        {
+            var warn = LanguageService.TranslationWarning(LanguageService.Current);
+            _languageWarning.Text = warn;
+            _languageWarning.Visible = !string.IsNullOrEmpty(warn);
+        }
+
+        SetTabPageText(_tabProfile, LocalizationUtils.GetStringByKey("profile.title"));
+        SetTabPageText(_tabNetwork, LocalizationUtils.GetStringByKey("tab.network"));
+        SetTabPageText(_tabRouting, LocalizationUtils.GetStringByKey("routing.title"));
+        SetTabPageText(_tabStorage, LocalizationUtils.GetStringByKey("settings.storage"));
+
+        _loadAvatar.Text = LocalizationUtils.GetStringByKey("profile.choose_avatar");
+        _clearAvatar.Text = LocalizationUtils.GetStringByKey("profile.clear_avatar");
+        _aboutLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("profile.about_ph", PeerProfileLimits.MaxAboutMeChars);
+        _hint.Text = LocalizationUtils.GetStringByKeyWithFormat(
+            "profile.avatar_hint",
+            PeerProfileLimits.MaxAvatarBytes / 1024,
+            AvatarDimension);
+
+        _lblUdpCaption.Text = LocalizationUtils.GetStringByKey("settings.udp");
+        _lan.Text = LocalizationUtils.GetStringByKey("settings.lan");
+        _shareRoutes.Text = LocalizationUtils.GetStringByKey("routing.share_routes");
+        _lblEconomy.Text = LocalizationUtils.GetStringByKey("settings.economy");
+        _lblNoBle.Text = LocalizationUtils.GetStringByKey("settings.bluetooth") + " — n/a";
+
+        _lblHops.Text = LocalizationUtils.GetStringByKey("routing.max_depth");
+        _lblAttempts.Text = LocalizationUtils.GetStringByKey("routing.attempts");
+        _lblDelay.Text = LocalizationUtils.GetStringByKey("routing.delay");
+        _lblTimeout.Text = LocalizationUtils.GetStringByKey("routing.timeout");
+        _lblLink.Text = LocalizationUtils.GetStringByKey("routing.speed");
+
+        _save.Text = LocalizationUtils.GetStringByKey("save");
+        _keys.Text = LocalizationUtils.GetStringByKey("settings.export_keys");
+        _exportProfile.Text = LocalizationUtils.GetStringByKey("settings.export_profile");
+        _about.Text = LocalizationUtils.GetStringByKey("settings.about");
+        _close.Text = LocalizationUtils.GetStringByKey("close");
+
+        RefreshEconomyLabels();
+        UpdateEconomyHint();
+        UpdateProfileSummary();
+        UpdateAboutCounter();
+    }
+
+    private void RefreshEconomyLabels()
+    {
+        var selected = SelectedEconomy();
+        _economy.Items.Clear();
+        foreach (var mode in new[]
+                 {
+                     TrafficQualityMode.Normal, TrafficQualityMode.Economy, TrafficQualityMode.UltraEconomy
+                 })
+            _economy.Items.Add(new EconomyItem(mode));
+        SelectEconomy(selected);
+    }
+
     private void UpdateProfileSummary()
     {
         var u = _auth.CurrentUser;
         var about = u != null && !string.IsNullOrWhiteSpace(u.AboutMe)
             ? $" · {TrimAbout(u.AboutMe, 60)}"
             : "";
-        _profile.Text = u == null ? "Не выполнен вход" : $"{u.Nickname}  ·  {u.NetworkIdShort}{about}";
+        _profile.Text = u == null
+            ? LocalizationUtils.GetStringByKey("login.failed")
+            : $"{u.Nickname}  ·  {u.NetworkIdShort}{about}";
     }
 
     private void LoadProfileIntoUiBestEffort()
@@ -161,7 +301,7 @@ public sealed partial class SettingsForm : AppForm
     {
         using var dlg = new OpenFileDialog
         {
-            Title = "Выбор аватара",
+            Title = LocalizationUtils.GetStringByKey("profile.choose_avatar"),
             Filter = "Images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp|All files|*.*"
         };
         if (dlg.ShowDialog(this) != DialogResult.OK)
@@ -171,7 +311,8 @@ public sealed partial class SettingsForm : AppForm
             var raw = File.ReadAllBytes(dlg.FileName);
             if (!TryCropTo512(raw, out var cropped, out var err))
             {
-                MessageBox.Show(this, err ?? "Не удалось подготовить изображение.", "Аватар",
+                MessageBox.Show(this, err ?? LocalizationUtils.GetStringByKey("profile.avatar_failed"),
+                    LocalizationUtils.GetStringByKey("profile.title"),
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -182,21 +323,23 @@ public sealed partial class SettingsForm : AppForm
                 var sizeKb = Math.Max(1, (cropped.Length + 1023) / 1024);
                 var limitKb = PeerProfileLimits.MaxAvatarBytes / 1024;
                 var answer = MessageBox.Show(this,
-                    $"После обрезки изображение ≈ {sizeKb} КБ (лимит {limitKb} КБ).\nСжать, чтобы уложиться?",
-                    "Сжать аватар?",
+                    LocalizationUtils.GetStringByKeyWithFormat("profile.compress_body", sizeKb, limitKb),
+                    LocalizationUtils.GetStringByKey("profile.compress_title"),
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
                 if (answer != DialogResult.Yes)
                 {
                     MessageBox.Show(this,
-                        $"Аватар должен быть ≤ {limitKb} КБ после обрезки.",
-                        "Аватар", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LocalizationUtils.GetStringByKeyWithFormat("profile.avatar_too_large", limitKb),
+                        LocalizationUtils.GetStringByKey("profile.title"), MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                     return;
                 }
 
                 if (!TryCompressToLimit(cropped, out prepared, out err))
                 {
-                    MessageBox.Show(this, err ?? $"Не удалось уложить аватар в {limitKb} КБ.", "Аватар",
+                    MessageBox.Show(this, err ?? LocalizationUtils.GetStringByKey("profile.avatar_failed"),
+                        LocalizationUtils.GetStringByKey("profile.title"),
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -208,7 +351,8 @@ public sealed partial class SettingsForm : AppForm
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to load avatar file (best-effort)");
-            MessageBox.Show(this, "Не удалось загрузить изображение.", "Аватар", MessageBoxButtons.OK,
+            MessageBox.Show(this, LocalizationUtils.GetStringByKey("profile.avatar_failed"),
+                LocalizationUtils.GetStringByKey("profile.title"), MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
     }
@@ -353,7 +497,8 @@ public sealed partial class SettingsForm : AppForm
                     .ConfigureAwait(true);
                 if (!ok)
                 {
-                    MessageBox.Show(this, error ?? "Ошибка сохранения профиля", "Профиль",
+                    MessageBox.Show(this, error ?? LocalizationUtils.GetStringByKey("profile.save_failed"),
+                        LocalizationUtils.GetStringByKey("profile.title"),
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -383,12 +528,15 @@ public sealed partial class SettingsForm : AppForm
             _logger.LogInformation("Settings saved: udp={Udp} quality={Quality} hops={Hops}",
                 s.EnableUdpTransport, s.TrafficQuality, s.MaxSearchHops);
             UpdateProfileSummary();
-            MessageBox.Show(this, "Сохранено.", "Настройки", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, LocalizationUtils.GetStringByKey("profile.saved"),
+                LocalizationUtils.GetStringByKey("settings.title"), MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Save settings");
-            MessageBox.Show(this, ex.Message, "Настройки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, ex.Message, LocalizationUtils.GetStringByKey("settings.title"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -437,13 +585,15 @@ public sealed partial class SettingsForm : AppForm
             var pub = RsaKeySerializer.SerializePublic(_auth.GetCurrentPublicKey());
             var text = $"Network id: {u.NetworkIdShort}\nPublic key JSON:\n{pub}";
             Clipboard.SetText(text);
-            MessageBox.Show(this, "Ключи скопированы в буфер обмена.", "Настройки", MessageBoxButtons.OK,
+            MessageBox.Show(this, LocalizationUtils.GetStringByKey("copied.keys"),
+                LocalizationUtils.GetStringByKey("settings.title"), MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Copy keys");
-            MessageBox.Show(this, ex.Message, "Настройки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, ex.Message, LocalizationUtils.GetStringByKey("settings.title"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -481,9 +631,9 @@ public sealed partial class SettingsForm : AppForm
     {
         public override string ToString() => Mode switch
         {
-            TrafficQualityMode.UltraEconomy => "Ультраэкономия (144p / 8 kbit/s голос)",
-            TrafficQualityMode.Economy => "Экономия (240p / 12 kbit/s голос)",
-            _ => "Нормальный (480p / 24 kbit/s голос)"
+            TrafficQualityMode.UltraEconomy => LocalizationUtils.GetStringByKey("economy.mode.ultra"),
+            TrafficQualityMode.Economy => LocalizationUtils.GetStringByKey("economy.mode.economy"),
+            _ => LocalizationUtils.GetStringByKey("economy.mode.normal")
         };
     }
 

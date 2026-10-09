@@ -1,6 +1,9 @@
-namespace TorgLink.Maui.Localization;
+﻿using System;
+using System.Collections.Generic;
 
-internal static partial class StringCatalog
+namespace TorgLink.Localization;
+
+public static partial class StringCatalog
 {
     private static Dictionary<string, string> Zh { get; } = new(StringComparer.Ordinal)
     {
@@ -129,7 +132,7 @@ internal static partial class StringCatalog
         ["settings.logout"] = "退出登录",
         ["settings.storage_mb"] = "已用 {0:0.0} MB",
         ["settings.storage_gb"] = "已用 {0:0.0} GB",
-        ["settings.about_body"] = "Mesh 信使。\n版本 0.1\nAndroid 5.0 (API 21)+",
+        ["settings.about_body"] = "Mesh 信使。\n版本 0.2.0\nAndroid 5.0 (API 21)+",
         ["economy.mode.normal"] = "正常",
         ["economy.mode.economy"] = "节省",
         ["economy.mode.ultra"] = "超省流量",
@@ -172,6 +175,7 @@ internal static partial class StringCatalog
         ["chat.compress"] = "压缩",
         ["chat.msg_missing"] = "未找到消息或消息为空。",
         ["chat.voice"] = "语音",
+        ["chat.send"] = "??",
         ["chat.voice_not_ready"] = "文件尚不可下载。",
         ["chat.download_retry"] = "已下载但文件未就绪。请再试一次。",
         ["chat.playback"] = "播放",

@@ -1,6 +1,9 @@
-namespace TorgLink.Maui.Localization;
+﻿using System;
+using System.Collections.Generic;
 
-internal static partial class StringCatalog
+namespace TorgLink.Localization;
+
+public static partial class StringCatalog
 {
     // Do NOT cache language tables in a static field initializer that references Ru/En/Es/De/Fr/Zh:
     // those properties are declared later (and across partial files), so the map can capture null

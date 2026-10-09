@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.ProfileBackup;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -24,10 +24,10 @@ internal static class ProfileFileShare
 
         // The master password is standalone: set right away, not checked against anything.
         var master = await PasswordPromptPage.ShowNewAsync(host,
-            Loc.T("profilex.export_title"),
-            Loc.T("profilex.master_body"),
-            Loc.T("profilex.master_ph"),
-            Loc.T("profilex.master_confirm_ph")).ConfigureAwait(true);
+            LocalizationUtils.GetStringByKey("profilex.export_title"),
+            LocalizationUtils.GetStringByKey("profilex.master_body"),
+            LocalizationUtils.GetStringByKey("profilex.master_ph"),
+            LocalizationUtils.GetStringByKey("profilex.master_confirm_ph")).ConfigureAwait(true);
         if (master == null)
             return;
 
@@ -38,7 +38,7 @@ internal static class ProfileFileShare
             if (!ok || fileBytes == null)
             {
                 logger.LogWarning("Profile export failed: {Error}", err);
-                await host.DisplayAlert(Loc.T("profilex.export_title"), LocalizeError(err), Loc.T("ok"))
+                await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.export_title"), LocalizeError(err), LocalizationUtils.GetStringByKey("ok"))
                     .ConfigureAwait(true);
                 return;
             }
@@ -48,7 +48,7 @@ internal static class ProfileFileShare
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Profile export failed");
-            await host.DisplayAlert(Loc.T("profilex.export_title"), ex.Message, Loc.T("ok"))
+            await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.export_title"), ex.Message, LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
             return;
         }
@@ -60,7 +60,7 @@ internal static class ProfileFileShare
         if (saved)
         {
             AppLog.Ui.LogInformation("Profile exported to {FileName}", name);
-            await host.DisplayAlert(Loc.T("profilex.export_title"), Loc.T("profilex.exported"), Loc.T("ok"))
+            await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.export_title"), LocalizationUtils.GetStringByKey("profilex.exported"), LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
         }
     }
@@ -77,14 +77,14 @@ internal static class ProfileFileShare
         {
             picked = await FilePicker.Default.PickAsync(new PickOptions
             {
-                PickerTitle = Loc.T("profilex.picker_title"),
+                PickerTitle = LocalizationUtils.GetStringByKey("profilex.picker_title"),
                 FileTypes = TlpFileTypes
             }).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Pick .tlp profile file");
-            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+            await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.import_title"), ex.Message, LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
             return false;
         }
@@ -104,15 +104,15 @@ internal static class ProfileFileShare
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Read .tlp profile file");
-            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+            await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.import_title"), ex.Message, LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
             return false;
         }
 
         var master = await PasswordPromptPage.ShowAsync(host,
-            Loc.T("profilex.import_title"),
-            Loc.T("profilex.master_unlock_body"),
-            Loc.T("profilex.master_ph")).ConfigureAwait(true);
+            LocalizationUtils.GetStringByKey("profilex.import_title"),
+            LocalizationUtils.GetStringByKey("profilex.master_unlock_body"),
+            LocalizationUtils.GetStringByKey("profilex.master_ph")).ConfigureAwait(true);
         if (master == null)
             return false;
 
@@ -122,7 +122,7 @@ internal static class ProfileFileShare
             if (!result.Ok || user == null)
             {
                 logger.LogWarning("Profile import failed: {Error}", result.Error);
-                await host.DisplayAlert(Loc.T("profilex.import_title"), LocalizeError(result.Error), Loc.T("ok"))
+                await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.import_title"), LocalizeError(result.Error), LocalizationUtils.GetStringByKey("ok"))
                     .ConfigureAwait(true);
                 return false;
             }
@@ -140,7 +140,7 @@ internal static class ProfileFileShare
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Profile import failed");
-            await host.DisplayAlert(Loc.T("profilex.import_title"), ex.Message, Loc.T("ok"))
+            await host.DisplayAlert(LocalizationUtils.GetStringByKey("profilex.import_title"), ex.Message, LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
             return false;
         }
@@ -155,12 +155,13 @@ internal static class ProfileFileShare
 
     private static string LocalizeError(string? err) => err switch
     {
-        ProfileBackupService.ErrorMasterPasswordRequired => Loc.T("pass.empty"),
-        ProfileBackupService.ErrorUnsupportedSaltSize => Loc.T("profilex.export_bad_account"),
-        ProfileBackupService.ErrorBadFileOrPassword => Loc.T("profilex.import_bad_file"),
-        ProfileBackupService.ErrorUnsupportedPasswordParams => Loc.T("profilex.import_bad_file"),
-        ProfileBackupService.ErrorNicknameTaken => Loc.T("profilex.import_conflict_nick"),
-        null => Loc.T("profilex.import_bad_file"),
+        ProfileBackupService.ErrorMasterPasswordRequired => LocalizationUtils.GetStringByKey("pass.empty"),
+        ProfileBackupService.ErrorUnsupportedSaltSize => LocalizationUtils.GetStringByKey("profilex.export_bad_account"),
+        ProfileBackupService.ErrorBadFileOrPassword => LocalizationUtils.GetStringByKey("profilex.import_bad_file"),
+        ProfileBackupService.ErrorUnsupportedPasswordParams => LocalizationUtils.GetStringByKey("profilex.import_bad_file"),
+        ProfileBackupService.ErrorNicknameTaken => LocalizationUtils.GetStringByKey("profilex.import_conflict_nick"),
+        null => LocalizationUtils.GetStringByKey("profilex.import_bad_file"),
         _ => err
     };
 }
+

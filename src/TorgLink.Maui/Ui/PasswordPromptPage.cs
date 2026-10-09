@@ -1,4 +1,4 @@
-using TorgLink.Maui.Localization;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -30,12 +30,12 @@ internal sealed class PasswordPromptPage : ContentPage
         errorLabel.SetDynamicResource(Label.TextColorProperty, "Danger");
         _errorLabel = errorLabel;
 
-        var cancelButton = new Button { Text = Loc.T("cancel") };
+        var cancelButton = new Button { Text = LocalizationUtils.GetStringByKey("cancel") };
         cancelButton.SetDynamicResource(Button.TextColorProperty, "MidnightBlue");
         cancelButton.BackgroundColor = Colors.Transparent;
         cancelButton.Clicked += async (_, _) => await CloseAsync(null).ConfigureAwait(true);
 
-        var okButton = new Button { Text = Loc.T("ok") };
+        var okButton = new Button { Text = LocalizationUtils.GetStringByKey("ok") };
         okButton.SetDynamicResource(Button.BackgroundColorProperty, "Accent");
         okButton.SetDynamicResource(Button.TextColorProperty, "ButtonText");
         okButton.Clicked += async (_, _) => await ConfirmAsync().ConfigureAwait(true);
@@ -98,13 +98,13 @@ internal sealed class PasswordPromptPage : ContentPage
         var password = _passwordEntry.Text ?? "";
         if (string.IsNullOrEmpty(password))
         {
-            ShowError(Loc.T("pass.empty"));
+            ShowError(LocalizationUtils.GetStringByKey("pass.empty"));
             return;
         }
 
         if (_confirmEntry != null && !string.Equals(password, _confirmEntry.Text ?? "", StringComparison.Ordinal))
         {
-            ShowError(Loc.T("profilex.master_mismatch"));
+            ShowError(LocalizationUtils.GetStringByKey("profilex.master_mismatch"));
             return;
         }
 
@@ -130,3 +130,4 @@ internal sealed class PasswordPromptPage : ContentPage
         return base.OnBackButtonPressed();
     }
 }
+

@@ -8,6 +8,7 @@ using ShortP2P.Discovery;
 using ShortP2P.MessengerServer.Contracts.Dtos;
 using ShortP2P.Transport;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -80,12 +81,27 @@ public sealed partial class LanScanForm : AppForm
             BindList();
         };
 
-        // Known chats (+ already-discovered peers). No GetClients/LAN probe until «Сканировать».
+        ApplyLocalizedUi();
+        // Known chats (+ already-discovered peers). No GetClients/LAN probe until Scan.
         Shown += async (_, _) =>
         {
-            _status.Text = "Нажмите «Сканировать» для опроса серверов и LAN.";
+            _status.Text = LocalizationUtils.GetStringByKey("lan.hint");
             await RefreshAsync().ConfigureAwait(true);
         };
+    }
+
+    protected override void ApplyLocalizedUi()
+    {
+        Text = LocalizationUtils.GetStringByKey("contacts.title");
+        _hint.Text = LocalizationUtils.GetStringByKey("lan.hint");
+        _colName.Text = LocalizationUtils.GetStringByKey("contact.nickname");
+        _colNetworkId.Text = LocalizationUtils.GetStringByKey("contact.network_id");
+        _colAbout.Text = LocalizationUtils.GetStringByKey("contact.about");
+        _colLastSeen.Text = LocalizationUtils.GetStringByKey("lan.last");
+        _scan.Text = LocalizationUtils.GetStringByKey("lan.scan");
+        _close.Text = LocalizationUtils.GetStringByKey("close");
+        _colTransport.Text = "Transport";
+        _colStatus.Text = LocalizationUtils.GetStringByKey("online");
     }
 
     private async Task RefreshAsync()

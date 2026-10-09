@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using Microsoft.Extensions.Logging;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
@@ -8,6 +7,7 @@ using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -46,10 +46,10 @@ public partial class ContactsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Title = Loc.T("tab.contacts");
-        SearchEntry.Placeholder = Loc.T("contacts.search");
-        ScanButton.Text = Loc.T("contacts.scan");
-        EmptyContactsLabel.Text = Loc.T("contacts.empty");
+        Title = LocalizationUtils.GetStringByKey("tab.contacts");
+        SearchEntry.Placeholder = LocalizationUtils.GetStringByKey("contacts.search");
+        ScanButton.Text = LocalizationUtils.GetStringByKey("contacts.scan");
+        EmptyContactsLabel.Text = LocalizationUtils.GetStringByKey("contacts.empty");
         var u = _auth.CurrentUser;
         if (u != null)
             _ = EnsureConnectivityAsync(u);
@@ -85,7 +85,7 @@ public partial class ContactsPage : ContentPage
         _scanning = true;
         ScanButton.IsEnabled = false;
         var sec = (int)Math.Round(LocalNetworkScanner.DefaultScanListenDuration.TotalSeconds);
-        ScanStatusLabel.Text = Loc.Tf("contacts.scanning_detail", sec);
+        ScanStatusLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("contacts.scanning_detail", sec);
         ScanSpinner.IsRunning = true;
         ScanStatusRow.IsVisible = true;
         try
@@ -96,7 +96,7 @@ public partial class ContactsPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Contacts scan");
-            await DisplayAlert(Loc.T("tab.contacts"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("tab.contacts"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
         finally
         {
@@ -215,7 +215,7 @@ public partial class ContactsPage : ContentPage
         {
             TransportKind.Udp => "LAN",
             TransportKind.Bluetooth => "Bluetooth",
-            TransportKind.MessengerServer => Loc.T("network.servers"),
+            TransportKind.MessengerServer => LocalizationUtils.GetStringByKey("network.servers"),
             _ => p.TransportKind.ToString()
         };
 
@@ -253,7 +253,8 @@ public partial class ContactsPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert(Loc.T("tab.contacts"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("tab.contacts"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 }
+

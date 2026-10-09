@@ -1,5 +1,5 @@
-using TorgLink.Maui.Localization;
 using ShortP2P.Client.Services;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui.Services;
 
@@ -22,10 +22,10 @@ internal static class BlacklistUi
 
         var label = string.IsNullOrWhiteSpace(nickname) ? id : nickname.Trim();
         var ok = await host.DisplayAlert(
-            Loc.T("blacklist.add_title"),
-            Loc.Tf("blacklist.add_body", label),
-            Loc.T("blacklist.add"),
-            Loc.T("cancel")).ConfigureAwait(true);
+            LocalizationUtils.GetStringByKey("blacklist.add_title"),
+            LocalizationUtils.GetStringByKeyWithFormat("blacklist.add_body", label),
+            LocalizationUtils.GetStringByKey("blacklist.add"),
+            LocalizationUtils.GetStringByKey("cancel")).ConfigureAwait(true);
         if (!ok)
             return false;
 
@@ -33,3 +33,4 @@ internal static class BlacklistUi
         return true;
     }
 }
+

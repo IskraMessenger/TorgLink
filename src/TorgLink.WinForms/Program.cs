@@ -16,6 +16,8 @@ using ShortP2P.Discovery.Profile;
 using ShortP2P.MessengerServer.Contracts.Dtos;
 using ShortP2P.Transport;
 using SQLitePCL;
+using TorgLink.Localization;
+using TorgLink.WinForms.Localization;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace TorgLink.WinForms;
@@ -33,6 +35,7 @@ internal static class Program
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TorgLink", "WinForms");
         Directory.CreateDirectory(appRoot);
+        WinFormsLanguageBootstrap.Initialize(appRoot);
 
         var services = new ServiceCollection();
         services.AddLogging(b =>
@@ -129,6 +132,13 @@ internal static class Program
 
         try
         {
+            if (!LanguageService.HasChosen)
+            {
+                using var languageSelect = new LanguageSelectForm();
+                if (languageSelect.ShowDialog() != DialogResult.OK)
+                    return;
+            }
+
             while (true)
             {
                 using var login = provider.GetRequiredService<LoginForm>();

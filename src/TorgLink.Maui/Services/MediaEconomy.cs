@@ -1,7 +1,7 @@
 using ShortP2P.Client.ChatMedia;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
-using TorgLink.Maui.Localization;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui.Services;
 
@@ -14,12 +14,12 @@ namespace TorgLink.Maui.Services;
 internal static class MediaEconomy
 {
     /// <summary>Soft image cap in UltraEconomy (stricter than ShortP2P 100 KB).</summary>
-    public const int MaxImageBytes = 50 * 1024;
+    private const int MaxImageBytes = 50 * 1024;
 
     /// <summary>TorgLink voice rates (override ShortP2P 6 / 4 kbit/s).</summary>
-    public const int EconomyVoiceBitrateBps = 12_000;
+    private const int EconomyVoiceBitrateBps = 12_000;
 
-    public const int UltraEconomyVoiceBitrateBps = 8_000;
+    private const int UltraEconomyVoiceBitrateBps = 8_000;
 
     public const int MinVoiceBitrateBps = UltraEconomyVoiceBitrateBps;
 
@@ -48,7 +48,7 @@ internal static class MediaEconomy
             _ => DefaultSpeechBitrateBps
         };
 
-    public static (int Width, int Height) VideoResolution(UserP2pRuntime p2p) =>
+    private static (int Width, int Height) VideoResolution(UserP2pRuntime p2p) =>
         Mode(p2p).GetVideoResolution();
 
     public static string VideoResolutionLabel(UserP2pRuntime p2p)
@@ -59,7 +59,7 @@ internal static class MediaEconomy
 
     public static int CameraVideoBitrate(UserP2pRuntime p2p) => Mode(p2p).GetCameraVideoBitrate();
 
-    public static bool IsUltraEconomy(TrafficQualityMode mode) => ChatMediaOptions.IsSuperEconomy(mode);
+    private static bool IsUltraEconomy(TrafficQualityMode mode) => ChatMediaOptions.IsSuperEconomy(mode);
 
     public static int ImageLimit(UserP2pRuntime p2p) =>
         IsUltraEconomy(Mode(p2p)) ? MaxImageBytes : ChatMediaOptions.DefaultMaxImageBytes;
@@ -96,16 +96,16 @@ internal static class MediaEconomy
         var (w, h) = mode.GetVideoResolution();
         var photoKb = IsUltraEconomy(mode) ? (int?)(MaxImageBytes / 1024) : null;
         return photoKb is null
-            ? Loc.Tf("economy.hint_normal", SpeechBitrate(mode) / 1000.0, w, h)
-            : Loc.Tf("economy.hint", SpeechBitrate(mode) / 1000.0, photoKb.Value, w, h);
+            ? LocalizationUtils.GetStringByKeyWithFormat("economy.hint_normal", SpeechBitrate(mode) / 1000.0, w, h)
+            : LocalizationUtils.GetStringByKeyWithFormat("economy.hint", SpeechBitrate(mode) / 1000.0, photoKb.Value, w, h);
     }
 
     public static string ModeLabel(TrafficQualityMode mode) =>
         mode switch
         {
-            TrafficQualityMode.UltraEconomy => Loc.T("economy.mode.ultra"),
-            TrafficQualityMode.Economy => Loc.T("economy.mode.economy"),
-            _ => Loc.T("economy.mode.normal")
+            TrafficQualityMode.UltraEconomy => LocalizationUtils.GetStringByKey("economy.mode.ultra"),
+            TrafficQualityMode.Economy => LocalizationUtils.GetStringByKey("economy.mode.economy"),
+            _ => LocalizationUtils.GetStringByKey("economy.mode.normal")
         };
 
     public static IReadOnlyList<TrafficQualityMode> AllModes { get; } =
@@ -115,3 +115,4 @@ internal static class MediaEconomy
         TrafficQualityMode.UltraEconomy
     ];
 }
+

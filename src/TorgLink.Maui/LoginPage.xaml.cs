@@ -1,8 +1,8 @@
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.ProfileBackup;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -30,12 +30,12 @@ public partial class LoginPage : ContentPage
 
     private void ApplyLocalizedUi()
     {
-        SubtitleLabel.Text = Loc.T("login.subtitle");
-        NicknameEntry.Placeholder = Loc.T("login.nick");
-        PasswordEntry.Placeholder = Loc.T("login.password");
-        SignInButton.Text = Loc.T("login.sign_in");
-        CreateAccountButton.Text = Loc.T("login.create_account");
-        ImportProfileButton.Text = Loc.T("login.import_profile");
+        SubtitleLabel.Text = LocalizationUtils.GetStringByKey("login.subtitle");
+        NicknameEntry.Placeholder = LocalizationUtils.GetStringByKey("login.nick");
+        PasswordEntry.Placeholder = LocalizationUtils.GetStringByKey("login.password");
+        SignInButton.Text = LocalizationUtils.GetStringByKey("login.sign_in");
+        CreateAccountButton.Text = LocalizationUtils.GetStringByKey("login.create_account");
+        ImportProfileButton.Text = LocalizationUtils.GetStringByKey("login.import_profile");
     }
 
     private async void OnLoginClicked(object? sender, EventArgs e)
@@ -46,7 +46,7 @@ public partial class LoginPage : ContentPage
         if (!ok)
         {
             _logger.LogWarning("Login failed for {Nickname}: {Reason}", nick, err);
-            await DisplayAlert(Loc.T("login.sign_in"), err ?? Loc.T("login.failed"), Loc.T("ok"))
+            await DisplayAlert(LocalizationUtils.GetStringByKey("login.sign_in"), err ?? LocalizationUtils.GetStringByKey("login.failed"), LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
             return;
         }
@@ -78,3 +78,4 @@ public partial class LoginPage : ContentPage
         return Task.CompletedTask;
     }
 }
+

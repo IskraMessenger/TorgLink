@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using Microsoft.Extensions.Logging;
-using TorgLink.Maui.Localization;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client.Qr;
@@ -9,6 +8,7 @@ using ShortP2P.Crypto;
 using ShortP2P.Discovery;
 using ShortP2P.Transport;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -45,7 +45,7 @@ public partial class NetworkPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Title = Loc.T("tab.network");
+        Title = LocalizationUtils.GetStringByKey("tab.network");
         ApplyLocalizedUi();
         _p2p.LocalScan.ClientsChanged -= OnClientsChanged;
         _p2p.LocalScan.ClientsChanged += OnClientsChanged;
@@ -54,15 +54,15 @@ public partial class NetworkPage : ContentPage
 
     private void ApplyLocalizedUi()
     {
-        NodesTitle.Text = Loc.T("network.nodes");
-        MyQrSectionLabel.Text = Loc.T("network.my_qr");
-        AddChatButton.Text = Loc.T("network.add_chat");
-        MyQrButton.Text = Loc.T("network.my_qr");
-        MyAddressesButton.Text = Loc.T("network.my_addresses");
-        CopyKeyButton.Text = Loc.T("network.copy_key");
-        LanScanButton.Text = Loc.T("settings.lan");
-        RoutingButton.Text = Loc.T("settings.routing");
-        ServersButton.Text = Loc.T("network.servers");
+        NodesTitle.Text = LocalizationUtils.GetStringByKey("network.nodes");
+        MyQrSectionLabel.Text = LocalizationUtils.GetStringByKey("network.my_qr");
+        AddChatButton.Text = LocalizationUtils.GetStringByKey("network.add_chat");
+        MyQrButton.Text = LocalizationUtils.GetStringByKey("network.my_qr");
+        MyAddressesButton.Text = LocalizationUtils.GetStringByKey("network.my_addresses");
+        CopyKeyButton.Text = LocalizationUtils.GetStringByKey("network.copy_key");
+        LanScanButton.Text = LocalizationUtils.GetStringByKey("settings.lan");
+        RoutingButton.Text = LocalizationUtils.GetStringByKey("settings.routing");
+        ServersButton.Text = LocalizationUtils.GetStringByKey("network.servers");
     }
 
     protected override void OnDisappearing()
@@ -91,18 +91,18 @@ public partial class NetworkPage : ContentPage
                 IdShort = id,
                 Initials = TorgLinkTheme.Initials(nick),
                 AvatarColor = TorgLinkTheme.AvatarColor(id),
-                Status = online ? Loc.T("online") : Loc.T("offline"),
+                Status = online ? LocalizationUtils.GetStringByKey("online") : LocalizationUtils.GetStringByKey("offline"),
                 Hops = p.TransportKind switch
                 {
                     TransportKind.Udp => "1 hop",
                     TransportKind.Bluetooth => "1 hop",
-                    TransportKind.MessengerServer => Loc.T("network.servers"),
+                    TransportKind.MessengerServer => LocalizationUtils.GetStringByKey("network.servers"),
                     _ => p.TransportKind.ToString()
                 }
             });
         }
 
-        NodesTitle.Text = Loc.Tf("network.nodes_count", _nodes.Count);
+        NodesTitle.Text = LocalizationUtils.GetStringByKeyWithFormat("network.nodes_count", _nodes.Count);
         _ = RenderQrAsync(user);
     }
 
@@ -149,7 +149,7 @@ public partial class NetworkPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert(Loc.T("tab.network"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("tab.network"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 
@@ -177,3 +177,4 @@ public partial class NetworkPage : ContentPage
     private async void OnServersClicked(object? sender, EventArgs e) =>
         await Navigation.PushAsync(MauiProgram.Services.GetRequiredService<MessengerServersPage>()).ConfigureAwait(true);
 }
+
