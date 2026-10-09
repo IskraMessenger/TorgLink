@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
@@ -10,6 +9,7 @@ using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery.Profile;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -73,9 +73,9 @@ public partial class ChatsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Title = Loc.T("tab.chats");
-        SearchEntry.Placeholder = Loc.T("search");
-        EmptyChatsLabel.Text = Loc.T("chats.empty");
+        Title = LocalizationUtils.GetStringByKey("tab.chats");
+        SearchEntry.Placeholder = LocalizationUtils.GetStringByKey("search");
+        EmptyChatsLabel.Text = LocalizationUtils.GetStringByKey("chats.empty");
         _chats.ChatListChanged -= OnChatListChangedFromInvite;
         _chats.ChatListChanged += OnChatListChangedFromInvite;
         _chats.ChatCreated -= OnChatCreated;
@@ -217,9 +217,9 @@ public partial class ChatsPage : ContentPage
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await DisplayAlert(
-                Loc.T("security.threat_title"),
-                Loc.Tf("security.threat_body", e.Server.BaseUrl, e.ExpectedFingerprint, e.ActualFingerprint),
-                Loc.T("ok")).ConfigureAwait(true);
+                LocalizationUtils.GetStringByKey("security.threat_title"),
+                LocalizationUtils.GetStringByKeyWithFormat("security.threat_body", e.Server.BaseUrl, e.ExpectedFingerprint, e.ActualFingerprint),
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         });
     }
 
@@ -520,7 +520,7 @@ public partial class ChatsPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Open chat {ChatId} failed", chatId);
-            await DisplayAlert(Loc.T("chats.open_failed"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chats.open_failed"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 }
@@ -682,3 +682,4 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
         };
     }
 }
+

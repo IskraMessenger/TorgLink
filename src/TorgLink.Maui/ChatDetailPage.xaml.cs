@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
@@ -14,6 +13,7 @@ using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery;
 using ShortP2P.Discovery.Profile;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -137,7 +137,7 @@ public partial class ChatDetailPage : ContentPage
             _logger.LogError(ex, "ChatDetailPage appear failed for chat {ChatId}", ChatId);
             try
             {
-                await DisplayAlert(Loc.T("error"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+                await DisplayAlert(LocalizationUtils.GetStringByKey("error"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
             }
             catch
             {
@@ -168,7 +168,7 @@ public partial class ChatDetailPage : ContentPage
     {
         if (chat == null)
         {
-            await DisplayAlert(Loc.T("error"), Loc.T("chat.not_found"), Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("error"), LocalizationUtils.GetStringByKey("chat.not_found"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
             await Navigation.PopAsync().ConfigureAwait(true);
             return;
         }
@@ -183,14 +183,14 @@ public partial class ChatDetailPage : ContentPage
         PeerNameLabel.Text = chat.PeerNickname;
         AvatarBadge.Apply(PeerAvatarFill, PeerAvatarInitials, PeerAvatarImage, chat.PeerNickname,
             chat.PeerNetworkIdShort, null);
-        PeerIdLabel.Text = Loc.Tf("chat.node", chat.PeerNetworkIdShort);
+        PeerIdLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("chat.node", chat.PeerNetworkIdShort);
         await RefreshSidebarAsync().ConfigureAwait(true);
         _ = ApplyPeerAvatarBestEffortAsync(chat, chat.PeerNickname);
-        SetControlHint(BlockPeerButton, Loc.T("blacklist.add_hint"));
-        SetControlHint(ClearChatButton, Loc.T("chat.delete_hint"));
-        SetControlHint(EmergencyUntrustButton, Loc.T("safety.untrust_hint"));
-        SetControlHint(PathModeButton, Loc.T("chat.path_hint"));
-        MessageEntry.Placeholder = Loc.T("chat.message_ph");
+        SetControlHint(BlockPeerButton, LocalizationUtils.GetStringByKey("blacklist.add_hint"));
+        SetControlHint(ClearChatButton, LocalizationUtils.GetStringByKey("chat.delete_hint"));
+        SetControlHint(EmergencyUntrustButton, LocalizationUtils.GetStringByKey("safety.untrust_hint"));
+        SetControlHint(PathModeButton, LocalizationUtils.GetStringByKey("chat.path_hint"));
+        MessageEntry.Placeholder = LocalizationUtils.GetStringByKey("chat.message_ph");
         _chat = chat;
         _peerNetworkIdShort = chat.PeerNetworkIdShort;
         ActiveChatTracker.Set(chat.Id);
@@ -341,7 +341,7 @@ public partial class ChatDetailPage : ContentPage
                 return;
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await DisplayAlert(Loc.T("error"), Loc.Tf("chat.udp_fail", ex.Message), Loc.T("ok"))
+                await DisplayAlert(LocalizationUtils.GetStringByKey("error"), LocalizationUtils.GetStringByKeyWithFormat("chat.udp_fail", ex.Message), LocalizationUtils.GetStringByKey("ok"))
                     .ConfigureAwait(true);
             }).ConfigureAwait(false);
         }
@@ -537,9 +537,9 @@ public partial class ChatDetailPage : ContentPage
             }
 
             await DisplayAlert(
-                Loc.T("safety.key_change_title"),
-                Loc.Tf("safety.key_change_body", e.PeerNickname, e.PreviousSafetyNumber, e.NewSafetyNumber),
-                Loc.T("ok")).ConfigureAwait(true);
+                LocalizationUtils.GetStringByKey("safety.key_change_title"),
+                LocalizationUtils.GetStringByKeyWithFormat("safety.key_change_body", e.PeerNickname, e.PreviousSafetyNumber, e.NewSafetyNumber),
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         });
     }
 
@@ -549,7 +549,7 @@ public partial class ChatDetailPage : ContentPage
             return;
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            await DisplayAlert(Loc.T("safety.mesh_title"), Loc.T("safety.mesh_body"), Loc.T("ok"))
+            await DisplayAlert(LocalizationUtils.GetStringByKey("safety.mesh_title"), LocalizationUtils.GetStringByKey("safety.mesh_body"), LocalizationUtils.GetStringByKey("ok"))
                 .ConfigureAwait(true);
         });
     }
@@ -923,9 +923,9 @@ public partial class ChatDetailPage : ContentPage
 
             var stateText = state switch
             {
-                ChatTransferState.Transferring => Loc.T("chat.state.loading"),
-                ChatTransferState.Failed => Loc.T("chat.state.failed"),
-                _ => Loc.T("chat.state.tap_download")
+                ChatTransferState.Transferring => LocalizationUtils.GetStringByKey("chat.state.loading"),
+                ChatTransferState.Failed => LocalizationUtils.GetStringByKey("chat.state.failed"),
+                _ => LocalizationUtils.GetStringByKey("chat.state.tap_download")
             };
             return AttachmentPlaceholder(m, isTransferOffer: true, ds, color, show, glyph, gColor, bubble, ts, stateText);
         }
@@ -982,29 +982,29 @@ public partial class ChatDetailPage : ContentPage
             // Audio: show play icon if ready, download icon if not
             mediaIcon = voiceReady ? "▶️" : "⬇️";
             var hint = voiceReady
-                ? Loc.T("chat.state.tap_play")
-                : (stateText ?? Loc.T("chat.state.tap_download"));
-            fileBody = $"{mediaIcon} {nameWithDuration} · {Loc.Tf("chat.kb", kb)} · {hint}";
+                ? LocalizationUtils.GetStringByKey("chat.state.tap_play")
+                : (stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_download"));
+            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {hint}";
         }
         else if (isVideo)
         {
             // Video: show video camera icon
             mediaIcon = "🎬";
-            var action = stateText ?? Loc.T("chat.state.tap_row");
-            fileBody = $"{mediaIcon} {nameWithDuration} · {Loc.Tf("chat.kb", kb)} · {action}";
+            var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
+            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
         }
         else if (isImage)
         {
             // Image: show picture icon
             mediaIcon = "🖼️";
-            var action = stateText ?? Loc.T("chat.state.tap_row");
-            fileBody = $"{mediaIcon} {nameWithDuration} · {Loc.Tf("chat.kb", kb)} · {action}";
+            var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
+            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
         }
         else
         {
             // Other files
-            var action = stateText ?? Loc.T("chat.state.tap_row");
-            fileBody = $"{nameWithDuration} · {Loc.Tf("chat.kb", kb)} · {action}";
+            var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
+            fileBody = $"{nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
         }
 
         return new MessageRowVm
@@ -1082,12 +1082,12 @@ public partial class ChatDetailPage : ContentPage
     private static string AttachmentKindCaption(ChatMessageEntity m)
     {
         if (IsVoiceAttachment(m))
-            return Loc.T("chat.caption.voice");
+            return LocalizationUtils.GetStringByKey("chat.caption.voice");
         if (IsImageAttachment(m))
-            return Loc.T("chat.caption.image");
+            return LocalizationUtils.GetStringByKey("chat.caption.image");
         if (IsVideoAttachment(m))
-            return Loc.T("chat.caption.video");
-        return Loc.T("chat.caption.file");
+            return LocalizationUtils.GetStringByKey("chat.caption.video");
+        return LocalizationUtils.GetStringByKey("chat.caption.file");
     }
 
     private static bool IsVoiceAttachment(ChatMessageEntity m) =>
@@ -1135,7 +1135,7 @@ public partial class ChatDetailPage : ContentPage
         var session = EnsureP2pSessionAttached(user, chat);
         if (session == null)
         {
-            ShowDeliveryIssue(Loc.T("error"));
+            ShowDeliveryIssue(LocalizationUtils.GetStringByKey("error"));
             return;
         }
 
@@ -1195,7 +1195,7 @@ public partial class ChatDetailPage : ContentPage
         var mic = await Permissions.RequestAsync<Permissions.Microphone>().ConfigureAwait(true);
         if (mic != PermissionStatus.Granted)
         {
-            ShowDeliveryIssue(Loc.T("chat.mic_denied"));
+            ShowDeliveryIssue(LocalizationUtils.GetStringByKey("chat.mic_denied"));
             return;
         }
 
@@ -1222,7 +1222,7 @@ public partial class ChatDetailPage : ContentPage
         _voice = null;
         if (voice == null)
         {
-            ShowDeliveryIssue(Loc.T("chat.voice_file_fail"));
+            ShowDeliveryIssue(LocalizationUtils.GetStringByKey("chat.voice_file_fail"));
             return;
         }
 
@@ -1315,7 +1315,7 @@ public partial class ChatDetailPage : ContentPage
             var row = await _repo.GetMessageAsync(messageId).ConfigureAwait(true);
             if (row == null)
             {
-                await DisplayAlert(Loc.T("chat.file"), Loc.T("chat.msg_missing"), Loc.T("ok")).ConfigureAwait(true);
+                await DisplayAlert(LocalizationUtils.GetStringByKey("chat.file"), LocalizationUtils.GetStringByKey("chat.msg_missing"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
                 return;
             }
 
@@ -1332,7 +1332,7 @@ public partial class ChatDetailPage : ContentPage
                                        !string.IsNullOrWhiteSpace(row.TransferId);
                 if (!canDownloadVoice)
                 {
-                    await DisplayAlert(Loc.T("chat.voice"), Loc.T("chat.voice_not_ready"), Loc.T("ok"))
+                    await DisplayAlert(LocalizationUtils.GetStringByKey("chat.voice"), LocalizationUtils.GetStringByKey("chat.voice_not_ready"), LocalizationUtils.GetStringByKey("ok"))
                         .ConfigureAwait(true);
                     return;
                 }
@@ -1352,7 +1352,7 @@ public partial class ChatDetailPage : ContentPage
                                   !string.IsNullOrWhiteSpace(row.TransferId);
             if (!canDownloadFile)
             {
-                await DisplayAlert(Loc.T("chat.file"), Loc.T("chat.msg_missing"), Loc.T("ok")).ConfigureAwait(true);
+                await DisplayAlert(LocalizationUtils.GetStringByKey("chat.file"), LocalizationUtils.GetStringByKey("chat.msg_missing"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
                 return;
             }
 
@@ -1361,7 +1361,7 @@ public partial class ChatDetailPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Open attachment failed");
-            await DisplayAlert(Loc.T("chat.file"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chat.file"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 
@@ -1419,7 +1419,7 @@ public partial class ChatDetailPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Voice play failed");
-            await DisplayAlert(Loc.T("chat.playback"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chat.playback"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 
@@ -1427,7 +1427,7 @@ public partial class ChatDetailPage : ContentPage
     {
         if (row.ImageBlob is not { Length: > 0 } blob)
         {
-            await DisplayAlert(Loc.T("chat.file"), Loc.T("chat.msg_missing"), Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chat.file"), LocalizationUtils.GetStringByKey("chat.msg_missing"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
             return;
         }
 
@@ -1467,7 +1467,7 @@ public partial class ChatDetailPage : ContentPage
 
         await Share.Default.RequestAsync(new ShareFileRequest
         {
-            Title = Loc.T("chat.save_doc"),
+            Title = LocalizationUtils.GetStringByKey("chat.save_doc"),
             File = new ShareFile(temp)
         }).ConfigureAwait(true);
     }
@@ -1605,7 +1605,7 @@ public partial class ChatDetailPage : ContentPage
 
         Title = display;
         PeerNameLabel.Text = display;
-        PeerIdLabel.Text = Loc.Tf("chat.node", id);
+        PeerIdLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("chat.node", id);
         RefreshSafetyLabel(chat);
         await ApplyPeerAvatarBestEffortAsync(chat, display).ConfigureAwait(true);
     }
@@ -1784,14 +1784,14 @@ public partial class ChatDetailPage : ContentPage
 
         var online = _p2p.LocalScan.IsPeerSeenRecentlyOnLan(_peerNetworkIdShort);
         PeerPresenceDot.Fill = online ? TorgLinkTheme.Online : TorgLinkTheme.Danger;
-        PeerStatusLabel.Text = online ? Loc.T("online") : Loc.T("offline");
+        PeerStatusLabel.Text = online ? LocalizationUtils.GetStringByKey("online") : LocalizationUtils.GetStringByKey("offline");
         PeerStatusLabel.TextColor = online ? TorgLinkTheme.Online : TorgLinkTheme.Muted;
     }
 
     private void ShowDeliveryIssue(string message)
     {
         DeliveryIssueLabel.Text = string.IsNullOrWhiteSpace(message)
-            ? Loc.T("chat.delivery_issue")
+            ? LocalizationUtils.GetStringByKey("chat.delivery_issue")
             : message.Trim();
         DeliveryIssueLabel.IsVisible = true;
     }
@@ -1807,9 +1807,9 @@ public partial class ChatDetailPage : ContentPage
         var path = _p2pSession?.DeliveryPath ?? ChatDeliveryPath.Auto;
         PathModeButton.Text = path switch
         {
-            ChatDeliveryPath.Server => Loc.T("chat.path_server"),
-            ChatDeliveryPath.Mesh => Loc.T("chat.path_mesh"),
-            _ => Loc.T("chat.path_auto")
+            ChatDeliveryPath.Server => LocalizationUtils.GetStringByKey("chat.path_server"),
+            ChatDeliveryPath.Mesh => LocalizationUtils.GetStringByKey("chat.path_mesh"),
+            _ => LocalizationUtils.GetStringByKey("chat.path_auto")
         };
     }
 
@@ -1828,8 +1828,8 @@ public partial class ChatDetailPage : ContentPage
         var status = _p2pSession?.HandshakeStatus ?? ChatHandshakeStatus.Idle;
         SessionStatusLabel.Text = status switch
         {
-            ChatHandshakeStatus.InProgress => Loc.T("chat.session_negotiating"),
-            ChatHandshakeStatus.Established => Loc.T("chat.session_established"),
+            ChatHandshakeStatus.InProgress => LocalizationUtils.GetStringByKey("chat.session_negotiating"),
+            ChatHandshakeStatus.Established => LocalizationUtils.GetStringByKey("chat.session_established"),
             _ => string.Empty
         };
     }
@@ -1839,11 +1839,11 @@ public partial class ChatDetailPage : ContentPage
         if (_p2pSession == null)
             return;
 
-        var serverChoice = Loc.T("chat.path_server_choice");
-        var meshChoice = Loc.T("chat.path_mesh_choice");
+        var serverChoice = LocalizationUtils.GetStringByKey("chat.path_server_choice");
+        var meshChoice = LocalizationUtils.GetStringByKey("chat.path_mesh_choice");
         var choice = await DisplayActionSheet(
-            Loc.T("chat.path_title"),
-            Loc.T("cancel"),
+            LocalizationUtils.GetStringByKey("chat.path_title"),
+            LocalizationUtils.GetStringByKey("cancel"),
             null,
             serverChoice,
             meshChoice).ConfigureAwait(true);
@@ -1864,7 +1864,7 @@ public partial class ChatDetailPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Delivery path switch failed for chat {ChatId}", ChatId);
-            await DisplayAlert(Loc.T("chat.path_title"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chat.path_title"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
 
         RefreshDeliveryPathButton();
@@ -1890,10 +1890,10 @@ public partial class ChatDetailPage : ContentPage
             return;
 
         var confirm = await DisplayAlert(
-            Loc.T("chat.clear_title"),
-            Loc.T("chat.clear_body"),
-            Loc.T("delete"),
-            Loc.T("cancel")).ConfigureAwait(true);
+            LocalizationUtils.GetStringByKey("chat.clear_title"),
+            LocalizationUtils.GetStringByKey("chat.clear_body"),
+            LocalizationUtils.GetStringByKey("delete"),
+            LocalizationUtils.GetStringByKey("cancel")).ConfigureAwait(true);
         if (!confirm)
             return;
 
@@ -1902,12 +1902,12 @@ public partial class ChatDetailPage : ContentPage
         {
             var ok = await _p2pSession.ClearMessagesAsync().ConfigureAwait(true);
             if (!ok)
-                await DisplayAlert(Loc.T("error"), Loc.T("chat.clear_fail"), Loc.T("ok")).ConfigureAwait(true);
+                await DisplayAlert(LocalizationUtils.GetStringByKey("error"), LocalizationUtils.GetStringByKey("chat.clear_fail"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Clear chat failed for chat {ChatId}", ChatId);
-            await DisplayAlert(Loc.T("error"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("error"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
         finally
         {
@@ -1937,3 +1937,4 @@ public partial class ChatDetailPage : ContentPage
         }
     }
 }
+

@@ -8,6 +8,7 @@ using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -90,13 +91,7 @@ public sealed partial class ChatForm : AppForm
         _messages.Resize += (_, _) => RelayoutMessageHeights();
         _messages.MouseClick += OnMessagesMouseClick;
 
-        _buttonTooltips.SetToolTip(_attachVoice,
-            "Голосовое (Ogg Opus): нажмите для начала записи, ещё раз — остановить и отправить. Битрейт зависит от режима экономии трафика.");
-        _buttonTooltips.SetToolTip(_attachImage, "Отправить изображение (сжатие по режиму экономии)");
-        _buttonTooltips.SetToolTip(_attachDocument, "Отправить документ или видео");
-        _buttonTooltips.SetToolTip(_deliveryPath,
-            "Переключить доставку этого чата: сервер или mesh (UDP/BLE). Ручной выбор держится, пока не переключите обратно.");
-        _buttonTooltips.SetToolTip(_send, "Отправить сообщение");
+        ApplyLocalizedUi();
         _deliveryPath.Click += (_, _) => ShowDeliveryPathMenu();
 
         _sidebar.DrawItem += OnSidebarDrawItem;
@@ -303,11 +298,32 @@ public sealed partial class ChatForm : AppForm
         _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
     }
 
+    protected override void ApplyLocalizedUi()
+    {
+        _send.Text = LocalizationUtils.GetStringByKey("chat.send");
+        _buttonTooltips.SetToolTip(_attachVoice, LocalizationUtils.GetStringByKey("chat.voice"));
+        _buttonTooltips.SetToolTip(_attachImage, LocalizationUtils.GetStringByKey("chat.image_picker"));
+        _buttonTooltips.SetToolTip(_attachDocument, LocalizationUtils.GetStringByKey("chat.doc_picker"));
+        _buttonTooltips.SetToolTip(_deliveryPath, LocalizationUtils.GetStringByKey("chat.path_hint"));
+        _buttonTooltips.SetToolTip(_send, LocalizationUtils.GetStringByKey("chat.send"));
+        RefreshDeliveryPathButton();
+        Text = FormatTitle(_chat);
+    }
+
     private void RefreshDeliveryPathButton()
     {
-        _deliveryPath.Text = _p2pSession == null
-            ? ChatP2PSession.DeliveryPathLabel(ChatDeliveryPath.Auto)
-            : ChatP2PSession.DeliveryPathLabel(_p2pSession.DeliveryPath);
+        if (_p2pSession == null)
+        {
+            _deliveryPath.Text = LocalizationUtils.GetStringByKey("chat.path_auto");
+            return;
+        }
+
+        _deliveryPath.Text = _p2pSession.DeliveryPath switch
+        {
+            ChatDeliveryPath.Server => LocalizationUtils.GetStringByKey("chat.path_server"),
+            ChatDeliveryPath.Mesh => LocalizationUtils.GetStringByKey("chat.path_mesh"),
+            _ => LocalizationUtils.GetStringByKey("chat.path_auto")
+        };
     }
 
     private void OnDeliveryPathChanged(object? sender, EventArgs e)
@@ -323,8 +339,10 @@ public sealed partial class ChatForm : AppForm
 
         var menu = new ContextMenuStrip();
         ChatDeliveryPath? chosen = null;
-        menu.Items.Add("Сервер", null, (_, _) => chosen = ChatDeliveryPath.Server);
-        menu.Items.Add("Mesh (UDP/BLE)", null, (_, _) => chosen = ChatDeliveryPath.Mesh);
+        menu.Items.Add(LocalizationUtils.GetStringByKey("chat.path_server_choice"), null,
+            (_, _) => chosen = ChatDeliveryPath.Server);
+        menu.Items.Add(LocalizationUtils.GetStringByKey("chat.path_mesh_choice"), null,
+            (_, _) => chosen = ChatDeliveryPath.Mesh);
         menu.Closed += (_, _) =>
         {
             // Dispose after Closed finishes — disposing inside Closed races ToolStripDropDown.CreateHandle.

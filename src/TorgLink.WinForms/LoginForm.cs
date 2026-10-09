@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.ProfileBackup;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -25,6 +26,7 @@ public sealed partial class LoginForm : AppForm
         _login.Click += async (_, _) => await OnLoginAsync().ConfigureAwait(true);
         _register.Click += OnRegister;
         _import.Click += async (_, _) => await OnImportAsync().ConfigureAwait(true);
+        ApplyLocalizedUi();
         Load += async (_, _) =>
         {
             if (await _auth.TryRestoreSessionAsync().ConfigureAwait(true) && _auth.CurrentUser != null)
@@ -35,13 +37,25 @@ public sealed partial class LoginForm : AppForm
         };
     }
 
+    protected override void ApplyLocalizedUi()
+    {
+        Text = "TorgLink — " + LocalizationUtils.GetStringByKey("login.sign_in");
+        _lblNick.Text = LocalizationUtils.GetStringByKey("login.nick");
+        _lblPass.Text = LocalizationUtils.GetStringByKey("login.password");
+        _login.Text = LocalizationUtils.GetStringByKey("login.sign_in");
+        _register.Text = LocalizationUtils.GetStringByKey("register.header");
+        _import.Text = LocalizationUtils.GetStringByKey("login.import_profile");
+        _exit.Text = LocalizationUtils.GetStringByKey("close");
+    }
+
     private async Task OnLoginAsync()
     {
         var (ok, err) = await _auth.LoginAsync(_nick.Text.Trim(), _pass.Text ?? "").ConfigureAwait(true);
         if (!ok)
         {
             _logger.LogWarning("Login failed: {Reason}", err);
-            MessageBox.Show(this, err ?? "Не удалось войти.", "Вход", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, err ?? LocalizationUtils.GetStringByKey("login.failed"),
+                LocalizationUtils.GetStringByKey("login.sign_in"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 

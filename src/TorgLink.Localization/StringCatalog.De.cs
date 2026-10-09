@@ -1,6 +1,9 @@
-namespace TorgLink.Maui.Localization;
+﻿using System;
+using System.Collections.Generic;
 
-internal static partial class StringCatalog
+namespace TorgLink.Localization;
+
+public static partial class StringCatalog
 {
     private static Dictionary<string, string> De { get; } = new(StringComparer.Ordinal)
     {
@@ -129,7 +132,7 @@ internal static partial class StringCatalog
         ["settings.logout"] = "Abmelden",
         ["settings.storage_mb"] = "Belegt {0:0.0} MB",
         ["settings.storage_gb"] = "Belegt {0:0.0} GB",
-        ["settings.about_body"] = "Mesh-Messenger.\nVersion 0.1\nAndroid 5.0 (API 21)+",
+        ["settings.about_body"] = "Mesh-Messenger.\nVersion 0.2.0\nAndroid 5.0 (API 21)+",
         ["economy.mode.normal"] = "Normal",
         ["economy.mode.economy"] = "Sparsam",
         ["economy.mode.ultra"] = "Ultra sparsam",
@@ -172,6 +175,7 @@ internal static partial class StringCatalog
         ["chat.compress"] = "Komprimierung",
         ["chat.msg_missing"] = "Nachricht nicht gefunden oder leer.",
         ["chat.voice"] = "Sprachnachricht",
+        ["chat.send"] = "Senden",
         ["chat.voice_not_ready"] = "Datei ist noch nicht zum Download bereit.",
         ["chat.download_retry"] = "Heruntergeladen, aber die Datei ist noch nicht bereit. Erneut versuchen.",
         ["chat.playback"] = "Wiedergabe",
