@@ -112,7 +112,7 @@ public sealed partial class ChatForm
 
         using var dlg = new OpenFileDialog
         {
-            Title = "Документ (до 20 МБ) или видео (до 30 МБ)",
+            Title = "Документ (до 20 МБ) или видео (до 60 МБ)",
             Filter =
                 "Документы и видео|*.doc;*.docx;*.rtf;*.pdf;*.odt;*.ods;*.odp;*.odg;*.xlsx;*.xls;*.pptx;*.ppt;*.mp4;*.mov;*.avi;*.wmv;*.webm;*.ogv|Все файлы|*.*",
             CheckFileExists = true,

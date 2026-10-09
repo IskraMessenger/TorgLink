@@ -157,7 +157,7 @@ internal static partial class StringCatalog
         ["chat.udp_fail"] = "Impossible de démarrer UDP : {0}",
         ["chat.file"] = "Fichier",
         ["chat.image_picker"] = "Image (JPEG, PNG, GIF, jusqu’à 10 Mo)",
-        ["chat.doc_picker"] = "Document (jusqu’à 20 Mo) ou vidéo (jusqu’à 30 Mo)",
+        ["chat.doc_picker"] = "Document (jusqu’à 20 Mo) ou vidéo (jusqu’à 60 Mo)",
         ["chat.only_images"] = "Seuls .jpg, .jpeg, .png, .gif sont autorisés",
         ["chat.file_too_small"] = "Le fichier est trop petit.",
         ["chat.file_mismatch"] = "Le contenu ne correspond pas à l’extension du fichier.",

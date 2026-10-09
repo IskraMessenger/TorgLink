@@ -8,7 +8,7 @@ namespace TorgLink.Maui.Services;
 /// <summary>
 /// Media quality / traffic modes aligned with ShortP2P <see cref="TrafficQualityMode"/>.
 /// Selection: Settings → traffic quality (persisted in P2pRoutingSettings.TrafficQuality).
-/// Normal and Economy use <see cref="ChatMediaOptions"/> ceilings (10 MB image, 20 MB document, 30 MB video).
+/// Normal and Economy use <see cref="ChatMediaOptions"/> ceilings (10 MB image, 20 MB document, 60 MB video).
 /// UltraEconomy keeps the TorgLink 50 KB image cap and ShortP2P super-economy file caps.
 /// </summary>
 internal static class MediaEconomy

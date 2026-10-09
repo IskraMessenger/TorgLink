@@ -120,7 +120,7 @@
   "chat.udp_fail": "无法启动 UDP：{0}",
   "chat.file": "文件",
   "chat.image_picker": "图片（JPEG、PNG、GIF，最大 10 MB）",
-  "chat.doc_picker": "文档（最大 20 MB）或视频（最大 30 MB）",
+  "chat.doc_picker": "文档（最大 20 MB）或视频（最大 60 MB）",
   "chat.only_images": "仅允许 .jpg、.jpeg、.png、.gif",
   "chat.file_too_small": "文件过小。",
   "chat.file_mismatch": "内容与扩展名不符。",

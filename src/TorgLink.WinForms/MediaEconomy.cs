@@ -5,7 +5,7 @@ namespace TorgLink.WinForms;
 
 /// <summary>
 /// Media quality / traffic modes aligned with MAUI <c>MediaEconomy</c>.
-/// Normal and Economy use ShortP2P ceilings (10 MB image, 20 MB document, 30 MB video).
+/// Normal and Economy use ShortP2P ceilings (10 MB image, 20 MB document, 60 MB video).
 /// UltraEconomy keeps the 50 KB image cap and ShortP2P super-economy file caps.
 /// </summary>
 internal static class MediaEconomy

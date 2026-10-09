@@ -130,7 +130,7 @@ partial class MainForm
         this._btnLogout.Name = "_btnLogout";
         this._btnLogout.Size = new System.Drawing.Size(75, 31);
         this._btnLogout.TabIndex = 6;
-        this._btnLogout.Text = "Выйти";
+        this._btnLogout.Text = "Разлогиниться";
         // 
         // _search
         // 

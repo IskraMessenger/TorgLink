@@ -120,7 +120,7 @@
   "chat.udp_fail": "Could not start UDP: {0}",
   "chat.file": "File",
   "chat.image_picker": "Image (JPEG, PNG, GIF, up to 10 MB)",
-  "chat.doc_picker": "Document (up to 20 MB) or video (up to 30 MB)",
+  "chat.doc_picker": "Document (up to 20 MB) or video (up to 60 MB)",
   "chat.only_images": "Only .jpg, .jpeg, .png, .gif are allowed",
   "chat.file_too_small": "File is too small.",
   "chat.file_mismatch": "Content does not match the file extension.",

@@ -5,14 +5,14 @@ namespace TorgLink.Web.Api.Services;
 
 /// <summary>
 /// Attachment size caps. UltraEconomy keeps the 50 KB image cap and ShortP2P super-economy
-/// file caps. Normal and Economy use 10 MB images, 20 MB documents, and 30 MB video.
+/// file caps. Normal and Economy use 10 MB images, 20 MB documents, and 60 MB video.
 /// </summary>
 internal static class MediaFileLimits
 {
     public const int UltraMaxImageBytes = 50 * 1024;
 
-    /// <summary>Multipart/Kestrel ceiling: 30 MB video plus form framing.</summary>
-    public const int MaxUploadBytes = 32 * 1024 * 1024;
+    /// <summary>Multipart/Kestrel ceiling: 60 MB video plus form framing.</summary>
+    public const int MaxUploadBytes = 62 * 1024 * 1024;
 
     public static bool IsUltraEconomy(TrafficQualityMode mode) => ChatMediaOptions.IsSuperEconomy(mode);
 

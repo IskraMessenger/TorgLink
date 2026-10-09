@@ -273,7 +273,7 @@ export function ChatPage(chatId) {
       return 200 * kb;
     }
     if (kind === "image") return 10 * mb;
-    if (kind === "video") return 30 * mb;
+    if (kind === "video") return 60 * mb;
     if (kind === "audio") return mb;
     return 20 * mb;
   }
