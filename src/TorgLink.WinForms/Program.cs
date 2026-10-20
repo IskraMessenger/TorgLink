@@ -117,12 +117,15 @@ internal static class Program
         if (File.Exists(Path.Combine(AppContext.BaseDirectory, "nlog.config")))
             LogManager.Setup().LoadConfigurationFromFile(Path.Combine(AppContext.BaseDirectory, "nlog.config"));
 
-        using var provider = services.BuildServiceProvider();
-        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
-        logger.LogInformation("TorgLink WinForms (net472) started");
-
+        // Singletons include IAsyncDisposable-only services (LocalNetworkScanner,
+        // MessengerServerSyncService, MessengerServerManager). Sync ServiceProvider.Dispose()
+        // throws InvalidOperationException for those — always tear down via DisposeAsync.
+        var provider = services.BuildServiceProvider();
         try
         {
+            var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
+            logger.LogInformation("TorgLink WinForms (net472) started");
+
             while (true)
             {
                 using var login = provider.GetRequiredService<LoginForm>();
@@ -163,6 +166,7 @@ internal static class Program
         finally
         {
             LogManager.Shutdown();
+            provider.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
     }
 
