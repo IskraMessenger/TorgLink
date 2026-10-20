@@ -1,4 +1,3 @@
-using TorgLink.Maui.Localization;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
@@ -6,6 +5,7 @@ using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Crypto;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -36,7 +36,7 @@ internal static class PeerSafetyUi
             var channel = LocalizedChannel(chat);
             return channel.Length == 0
                 ? fingerprints
-                : fingerprints + Environment.NewLine + Loc.Tf("safety.channel", channel);
+                : fingerprints + Environment.NewLine + LocalizationUtils.GetStringByKeyWithFormat("safety.channel", channel);
         }
         catch
         {
@@ -50,21 +50,21 @@ internal static class PeerSafetyUi
         if (kind.Length == 0)
             return "";
         if (string.Equals(kind, PeerKeySourceKinds.Udp, StringComparison.OrdinalIgnoreCase))
-            return Loc.T("safety.ch_udp");
+            return LocalizationUtils.GetStringByKey("safety.ch_udp");
         if (string.Equals(kind, PeerKeySourceKinds.Bluetooth, StringComparison.OrdinalIgnoreCase))
-            return Loc.T("safety.ch_bt");
+            return LocalizationUtils.GetStringByKey("safety.ch_bt");
         if (PeerKeySource.IsServer(kind))
         {
             var endpoint = PeerSafetyDisplay.FormatServerEndpoint(chat.PeerKeySourceDetail ?? "");
             return endpoint.Length == 0
-                ? Loc.T("safety.ch_server")
-                : Loc.Tf("safety.ch_server_ep", endpoint);
+                ? LocalizationUtils.GetStringByKey("safety.ch_server")
+                : LocalizationUtils.GetStringByKeyWithFormat("safety.ch_server_ep", endpoint);
         }
 
         if (string.Equals(kind, PeerKeySourceKinds.Qr, StringComparison.OrdinalIgnoreCase))
-            return Loc.T("safety.ch_qr");
+            return LocalizationUtils.GetStringByKey("safety.ch_qr");
         if (string.Equals(kind, PeerKeySourceKinds.Manual, StringComparison.OrdinalIgnoreCase))
-            return Loc.T("safety.ch_manual");
+            return LocalizationUtils.GetStringByKey("safety.ch_manual");
         return kind;
     }
 
@@ -84,7 +84,8 @@ internal static class PeerSafetyUi
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Emergency untrust failed");
-            await page.DisplayAlert(Loc.T("safety.emergency"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await page.DisplayAlert(LocalizationUtils.GetStringByKey("safety.emergency"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 }
+

@@ -1,3 +1,4 @@
+using TorgLink.Localization;
 using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-        LanguageService.Load();
+        MauiLanguageBootstrap.Initialize();
         ThemeService.LoadAndApply();
         UiInteractionLog.HookApplication(this);
 

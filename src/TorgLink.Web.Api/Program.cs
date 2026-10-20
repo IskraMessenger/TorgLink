@@ -59,9 +59,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddProblemDetails();
 builder.Services.AddSignalR();
 // Frontend is served same-origin from wwwroot — no CORS needed.
-builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 20 * 1024 * 1024);
+builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = MediaFileLimits.MaxUploadBytes);
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = MediaFileLimits.MaxUploadBytes);
 
-builder.Services.AddSingleton(_ => ChatMediaOptions.LoadOrDefault(WebAppPaths.ChatMediaPath));
+builder.Services.AddSingleton(_ =>
+{
+    var opts = ChatMediaOptions.LoadOrDefault(WebAppPaths.ChatMediaPath);
+    MediaFileLimits.ApplyStandardCeilings(opts);
+    return opts;
+});
 builder.Services.AddSingleton(_ => new AppDatabase(WebAppPaths.DatabasePath));
 builder.Services.AddSingleton<IUserAuthRepository, SqliteUserAuthRepository>();
 builder.Services.AddRouteDbContextForAspNet(WebAppPaths.RoutesDbPath);

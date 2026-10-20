@@ -4,7 +4,7 @@ using ShortP2P.Client.Bluetooth;
 using ShortP2P.Client.Services;
 using ShortP2P.Crypto;
 using ShortP2P.Transport;
-using TorgLink.Maui.Localization;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -31,7 +31,7 @@ internal static class ProfileShare
         var text = await Task.Run(() => MyTransportEndpointsText.Build(u, p2p.Settings, bt))
             .ConfigureAwait(true);
         await Clipboard.Default.SetTextAsync(text).ConfigureAwait(true);
-        await host.DisplayAlert(Loc.T("copied"), Loc.T("copied.addresses"), Loc.T("ok")).ConfigureAwait(true);
+        await host.DisplayAlert(LocalizationUtils.GetStringByKey("copied"), LocalizationUtils.GetStringByKey("copied.addresses"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
     }
 
     public static async Task CopyKeysAsync(Page host, AuthService auth)
@@ -42,6 +42,7 @@ internal static class ProfileShare
         var pub = RsaKeySerializer.SerializePublic(auth.GetCurrentPublicKey());
         var text = $"Network id: {u.NetworkIdShort}\nPublic key JSON:\n{pub}";
         await Clipboard.Default.SetTextAsync(text).ConfigureAwait(true);
-        await host.DisplayAlert(Loc.T("copied"), Loc.T("copied.keys"), Loc.T("ok")).ConfigureAwait(true);
+        await host.DisplayAlert(LocalizationUtils.GetStringByKey("copied"), LocalizationUtils.GetStringByKey("copied.keys"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
     }
 }
+

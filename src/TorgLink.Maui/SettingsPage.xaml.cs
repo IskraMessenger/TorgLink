@@ -1,13 +1,14 @@
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Extensions.Logging;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using ShortP2P.Auth;
 using ShortP2P.Client.Bluetooth;
 using ShortP2P.Client.Data.Abstractions;
+using ShortP2P.Client.ProfileBackup;
 using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -19,10 +20,12 @@ public partial class SettingsPage : ContentPage
     private readonly UserP2pRuntime _p2p;
     private readonly P2pRoutingSettingsStore _store;
     private readonly DatabaseProviderSettings _databaseSettings;
+    private readonly ProfileBackupService _profileBackup;
     private bool _suppressToggle;
 
     public SettingsPage(AuthService auth, UserP2pRuntime p2p, P2pRoutingSettingsStore store,
-        IBluetoothTransportProvider bluetoothTransport, DatabaseProviderSettings databaseSettings, ILogger<SettingsPage> logger)
+        IBluetoothTransportProvider bluetoothTransport, DatabaseProviderSettings databaseSettings, ILogger<SettingsPage> logger,
+        ProfileBackupService profileBackup)
     {
         InitializeComponent();
         _auth = auth;
@@ -31,6 +34,7 @@ public partial class SettingsPage : ContentPage
         _bluetoothTransport = bluetoothTransport;
         _databaseSettings = databaseSettings;
         _logger = logger;
+        _profileBackup = profileBackup;
         LanguageService.Changed += OnLanguageChanged;
         ProfileRow.GestureRecognizers.Add(new TapGestureRecognizer
         {
@@ -79,9 +83,9 @@ public partial class SettingsPage : ContentPage
         LanSwitch.IsToggled = _p2p.Settings.EnableUdpTransport;
         RoutingSwitch.IsToggled = _p2p.Settings.AdvertisedPeerCapabilities.HasFlag(PresencePeerCapabilities.PeerSearch);
         _suppressToggle = false;
-        BluetoothHint.Text = BluetoothSwitch.IsToggled ? Loc.T("on") : Loc.T("off");
-        LanHint.Text = LanSwitch.IsToggled ? Loc.T("on") : Loc.T("off");
-        RoutingHint.Text = RoutingSwitch.IsToggled ? Loc.T("on") : Loc.T("off");
+        BluetoothHint.Text = BluetoothSwitch.IsToggled ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
+        LanHint.Text = LanSwitch.IsToggled ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
+        RoutingHint.Text = RoutingSwitch.IsToggled ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
         EconomyHint.Text = MediaEconomy.Hint(_p2p.Settings.TrafficQuality);
         StorageLabel.Text = FormatStorage();
 
@@ -108,25 +112,26 @@ public partial class SettingsPage : ContentPage
 
     private void ApplyLocalizedChrome()
     {
-        Title = Loc.T("settings.title");
+        Title = LocalizationUtils.GetStringByKey("settings.title");
         TitleLabel.Text = Title;
-        LanguageSectionLabel.Text = Loc.T("lang.section");
-        AppearanceLabel.Text = Loc.T("settings.appearance");
-        BluetoothLabel.Text = Loc.T("settings.bluetooth");
-        UdpLabel.Text = Loc.T("settings.udp");
-        LanLabel.Text = Loc.T("settings.lan");
-        RoutingLabel.Text = Loc.T("settings.routing");
-        DatabaseLabel.Text = Loc.T("settings.database");
-        DatabaseHint.Text = Loc.T("settings.database_hint");
-        EconomyLabel.Text = Loc.T("settings.economy");
-        StorageTitleLabel.Text = Loc.T("settings.storage");
-        ExportKeysButton.Text = Loc.T("settings.export_keys");
-        RoutingOpenButton.Text = Loc.T("settings.routing_open");
-        ConnectionTestButton.Text = Loc.T("settings.connection_test");
-        LogsButton.Text = Loc.T("settings.logs");
-        BlacklistButton.Text = Loc.T("blacklist.title");
-        AboutButton.Text = Loc.T("settings.about");
-        LogoutButton.Text = Loc.T("settings.logout");
+        LanguageSectionLabel.Text = LocalizationUtils.GetStringByKey("lang.section");
+        AppearanceLabel.Text = LocalizationUtils.GetStringByKey("settings.appearance");
+        BluetoothLabel.Text = LocalizationUtils.GetStringByKey("settings.bluetooth");
+        UdpLabel.Text = LocalizationUtils.GetStringByKey("settings.udp");
+        LanLabel.Text = LocalizationUtils.GetStringByKey("settings.lan");
+        RoutingLabel.Text = LocalizationUtils.GetStringByKey("settings.routing");
+        DatabaseLabel.Text = LocalizationUtils.GetStringByKey("settings.database");
+        DatabaseHint.Text = LocalizationUtils.GetStringByKey("settings.database_hint");
+        EconomyLabel.Text = LocalizationUtils.GetStringByKey("settings.economy");
+        StorageTitleLabel.Text = LocalizationUtils.GetStringByKey("settings.storage");
+        ExportKeysButton.Text = LocalizationUtils.GetStringByKey("settings.export_keys");
+        ExportProfileButton.Text = LocalizationUtils.GetStringByKey("settings.export_profile");
+        RoutingOpenButton.Text = LocalizationUtils.GetStringByKey("settings.routing_open");
+        ConnectionTestButton.Text = LocalizationUtils.GetStringByKey("settings.connection_test");
+        LogsButton.Text = LocalizationUtils.GetStringByKey("settings.logs");
+        BlacklistButton.Text = LocalizationUtils.GetStringByKey("blacklist.title");
+        AboutButton.Text = LocalizationUtils.GetStringByKey("settings.about");
+        LogoutButton.Text = LocalizationUtils.GetStringByKey("settings.logout");
         var warn = LanguageService.TranslationWarning(LanguageService.Current);
         LanguageWarningLabel.Text = warn;
         LanguageWarningLabel.IsVisible = LanguageService.ShowTranslationWarning;
@@ -201,7 +206,7 @@ public partial class SettingsPage : ContentPage
                 return;
             var warn = LanguageService.TranslationWarning(captured);
             if (!string.IsNullOrEmpty(warn))
-                _ = DisplayAlert(LanguageService.NativeName(captured), warn, Loc.T("ok"));
+                _ = DisplayAlert(LanguageService.NativeName(captured), warn, LocalizationUtils.GetStringByKey("ok"));
             LanguageService.Set(captured);
         };
         tile.GestureRecognizers.Add(tap);
@@ -307,7 +312,7 @@ public partial class SettingsPage : ContentPage
                 foreach (var f in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
                     bytes += new FileInfo(f).Length;
             var mb = bytes / (1024.0 * 1024.0);
-            return mb >= 1024 ? Loc.Tf("settings.storage_gb", mb / 1024) : Loc.Tf("settings.storage_mb", mb);
+            return mb >= 1024 ? LocalizationUtils.GetStringByKeyWithFormat("settings.storage_gb", mb / 1024) : LocalizationUtils.GetStringByKeyWithFormat("settings.storage_mb", mb);
         }
         catch
         {
@@ -328,10 +333,10 @@ public partial class SettingsPage : ContentPage
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             var result = await DisplayAlert(
-                Loc.T("settings.database_change_title"),
-                Loc.T("settings.database_change_message"),
-                Loc.T("ok"),
-                Loc.T("cancel")
+                LocalizationUtils.GetStringByKey("settings.database_change_title"),
+                LocalizationUtils.GetStringByKey("settings.database_change_message"),
+                LocalizationUtils.GetStringByKey("ok"),
+                LocalizationUtils.GetStringByKey("cancel")
             ).ConfigureAwait(true);
 
             if (result)
@@ -352,21 +357,21 @@ public partial class SettingsPage : ContentPage
 
     private async void OnBluetoothToggled(object? sender, ToggledEventArgs e)
     {
-        BluetoothHint.Text = e.Value ? Loc.T("on") : Loc.T("off");
+        BluetoothHint.Text = e.Value ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
         if (!_suppressToggle)
             await SaveAsync(s => s.EnableBluetoothTransport = e.Value).ConfigureAwait(true);
     }
 
     private async void OnLanToggled(object? sender, ToggledEventArgs e)
     {
-        LanHint.Text = e.Value ? Loc.T("on") : Loc.T("off");
+        LanHint.Text = e.Value ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
         if (!_suppressToggle)
             await SaveAsync(s => s.EnableUdpTransport = e.Value).ConfigureAwait(true);
     }
 
     private async void OnRoutingToggled(object? sender, ToggledEventArgs e)
     {
-        RoutingHint.Text = e.Value ? Loc.T("on") : Loc.T("off");
+        RoutingHint.Text = e.Value ? LocalizationUtils.GetStringByKey("on") : LocalizationUtils.GetStringByKey("off");
         if (_suppressToggle)
             return;
         await SaveAsync(s =>
@@ -408,6 +413,9 @@ public partial class SettingsPage : ContentPage
     private async void OnExportKeysClicked(object? sender, EventArgs e) =>
         await ProfileShare.CopyKeysAsync(this, _auth).ConfigureAwait(true);
 
+    private async void OnExportProfileClicked(object? sender, EventArgs e) =>
+        await ProfileFileShare.ExportProfileAsync(this, _auth, _profileBackup, _logger).ConfigureAwait(true);
+
     private async void OnOpenRoutingClicked(object? sender, EventArgs e) =>
         await Navigation.PushAsync(MauiProgram.Services.GetRequiredService<RoutingSettingsPage>()).ConfigureAwait(true);
 
@@ -421,7 +429,7 @@ public partial class SettingsPage : ContentPage
         await Navigation.PushAsync(MauiProgram.Services.GetRequiredService<LogsPage>()).ConfigureAwait(true);
 
     private async void OnAboutClicked(object? sender, EventArgs e) =>
-        await DisplayAlert("TorgLink", Loc.T("settings.about_body"), Loc.T("ok")).ConfigureAwait(true);
+        await DisplayAlert("TorgLink", LocalizationUtils.GetStringByKey("settings.about_body"), LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
 
     private async void OnLogoutClicked(object? sender, EventArgs e)
     {
@@ -439,3 +447,4 @@ public partial class SettingsPage : ContentPage
         Application.Current!.MainPage = new NavigationPage(MauiProgram.Services.GetRequiredService<LoginPage>());
     }
 }
+

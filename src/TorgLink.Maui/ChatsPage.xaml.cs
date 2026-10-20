@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using TorgLink.Maui.Localization;
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
@@ -9,6 +8,8 @@ using ShortP2P.Client;
 using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
+using ShortP2P.Discovery.Profile;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -27,6 +28,7 @@ public partial class ChatsPage : ContentPage
     private IDispatcherTimer? _presenceRefreshTimer;
     private Task _connectivityTask = Task.CompletedTask;
     private string _search = "";
+    private bool _profileHooksAttached;
 
     public ChatsPage(AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
         MessengerServerManager messengerServers, PeerBlacklist blacklist, ILogger<ChatsPage> logger)
@@ -71,9 +73,9 @@ public partial class ChatsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Title = Loc.T("tab.chats");
-        SearchEntry.Placeholder = Loc.T("search");
-        EmptyChatsLabel.Text = Loc.T("chats.empty");
+        Title = LocalizationUtils.GetStringByKey("tab.chats");
+        SearchEntry.Placeholder = LocalizationUtils.GetStringByKey("search");
+        EmptyChatsLabel.Text = LocalizationUtils.GetStringByKey("chats.empty");
         _chats.ChatListChanged -= OnChatListChangedFromInvite;
         _chats.ChatListChanged += OnChatListChangedFromInvite;
         _chats.ChatCreated -= OnChatCreated;
@@ -88,6 +90,7 @@ public partial class ChatsPage : ContentPage
         _messengerServers.TrustThreatDetected += OnMessengerServerTrustThreat;
         _blacklist.Changed -= OnBlacklistChanged;
         _blacklist.Changed += OnBlacklistChanged;
+        AttachPeerProfileHooks();
         EnsurePresenceRefreshTimerStarted();
         var u = _auth.CurrentUser;
         if (u != null)
@@ -140,9 +143,59 @@ public partial class ChatsPage : ContentPage
         _chats.ChatCreated -= OnChatCreated;
         _messengerServers.TrustThreatDetected -= OnMessengerServerTrustThreat;
         _blacklist.Changed -= OnBlacklistChanged;
+        DetachPeerProfileHooks();
         if (_presenceRefreshTimer != null)
             _presenceRefreshTimer.Stop();
         base.OnDisappearing();
+    }
+
+    private void AttachPeerProfileHooks()
+    {
+        var store = _p2p.PeerProfiles;
+        if (store == null || _profileHooksAttached)
+            return;
+        store.Changed -= OnPeerProfileChanged;
+        store.Changed += OnPeerProfileChanged;
+        _profileHooksAttached = true;
+    }
+
+    private void DetachPeerProfileHooks()
+    {
+        var store = _p2p.PeerProfiles;
+        if (store != null)
+            store.Changed -= OnPeerProfileChanged;
+        _profileHooksAttached = false;
+    }
+
+    private void OnPeerProfileChanged(object? sender, PeerProfileChangedEventArgs e)
+    {
+        var id = e.NetworkId.ToShortString();
+        MainThread.BeginInvokeOnMainThread(() => _ = PatchPeerAvatarAsync(id));
+    }
+
+    private async Task PatchPeerAvatarAsync(string peerNetworkIdShort)
+    {
+        try
+        {
+            var store = _p2p.PeerProfiles;
+            if (store == null)
+                return;
+            var snap = await store.GetAsync(CompressedNetworkId.FromShortString(peerNetworkIdShort))
+                .ConfigureAwait(false);
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                foreach (var row in _allRows)
+                {
+                    if (!ChatRepository.PeerNetworkIdsEqual(row.PeerNetworkIdShort, peerNetworkIdShort))
+                        continue;
+                    row.SetAvatar(snap?.Avatar);
+                }
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Patch peer avatar for {NetworkId}", peerNetworkIdShort);
+        }
     }
 
     private void OnBlacklistChanged(object? sender, EventArgs e)
@@ -164,9 +217,9 @@ public partial class ChatsPage : ContentPage
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await DisplayAlert(
-                Loc.T("security.threat_title"),
-                Loc.Tf("security.threat_body", e.Server.BaseUrl, e.ExpectedFingerprint, e.ActualFingerprint),
-                Loc.T("ok")).ConfigureAwait(true);
+                LocalizationUtils.GetStringByKey("security.threat_title"),
+                LocalizationUtils.GetStringByKeyWithFormat("security.threat_body", e.Server.BaseUrl, e.ExpectedFingerprint, e.ActualFingerprint),
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         });
     }
 
@@ -247,6 +300,8 @@ public partial class ChatsPage : ContentPage
             built.Add(new ChatListRowVm(c, last, _p2p.LocalScan.IsPeerSeenRecentlyOnLan(c.PeerNetworkIdShort)));
         }
 
+        await ApplyPeerAvatarsAsync(built).ConfigureAwait(false);
+
         await MainThread.InvokeOnMainThreadAsync(() =>
         {
             Header.Bind(u, _p2p);
@@ -254,6 +309,27 @@ public partial class ChatsPage : ContentPage
             _allRows.AddRange(built);
             ApplyFilter();
         }).ConfigureAwait(false);
+    }
+
+    private async Task ApplyPeerAvatarsAsync(IReadOnlyList<ChatListRowVm> rows)
+    {
+        var store = _p2p.PeerProfiles;
+        if (store == null || rows.Count == 0)
+            return;
+
+        foreach (var row in rows)
+        {
+            try
+            {
+                var snap = await store.GetAsync(CompressedNetworkId.FromShortString(row.PeerNetworkIdShort))
+                    .ConfigureAwait(false);
+                row.SetAvatar(snap?.Avatar);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Load peer avatar for chat list {NetworkId}", row.PeerNetworkIdShort);
+            }
+        }
     }
 
     private async Task PatchLastMessageAsync(int chatId)
@@ -444,7 +520,7 @@ public partial class ChatsPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Open chat {ChatId} failed", chatId);
-            await DisplayAlert(Loc.T("chats.open_failed"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("chats.open_failed"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 }
@@ -454,6 +530,8 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
     private bool _isPeerOnline;
     private string _initials;
     private Color _avatarColor;
+    private ImageSource? _avatarImage;
+    private int _avatarFingerprint;
     private string _lastPreview;
     private string _timeLabel;
     private string _deliveryGlyph;
@@ -474,6 +552,9 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
     public string PeerNetworkIdShort => Chat.PeerNetworkIdShort;
     public string Initials => _initials;
     public Color AvatarColor => _avatarColor;
+    public ImageSource? AvatarImage => _avatarImage;
+    public bool HasAvatar => _avatarImage != null;
+    public bool ShowInitials => _avatarImage == null;
     public string LastPreview => _lastPreview;
     public string TimeLabel => _timeLabel;
     public string DeliveryGlyph => _deliveryGlyph;
@@ -494,6 +575,36 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    public void SetAvatar(byte[]? avatar)
+    {
+        var fingerprint = AvatarFingerprint(avatar);
+        if (fingerprint == _avatarFingerprint)
+            return;
+
+        var had = _avatarImage != null;
+        _avatarFingerprint = fingerprint;
+        _avatarImage = PeerAvatarUi.ToImageSource(avatar);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AvatarImage)));
+        if (had != (_avatarImage != null))
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasAvatar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowInitials)));
+        }
+    }
+
+    private static int AvatarFingerprint(byte[]? avatar)
+    {
+        if (avatar is not { Length: > 0 } || avatar.Length > PeerProfileLimits.MaxAvatarDisplayBytes)
+            return 0;
+        unchecked
+        {
+            var h = (avatar.Length * 397) ^ avatar[0] ^ (avatar[^1] << 8);
+            if (avatar.Length > 2)
+                h ^= avatar[avatar.Length / 2] << 16;
+            return h == 0 ? 1 : h;
+        }
+    }
+
     public void CopyFrom(ChatListRowVm other)
     {
         if (ReferenceEquals(this, other))
@@ -501,6 +612,15 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
         UpdateLastPreview(other._lastPreview, other._timeLabel, other._deliveryGlyph, other._deliveryGlyphColor,
             other._showDelivery);
         ApplyPeerVisuals();
+        if (!ReferenceEquals(_avatarImage, other._avatarImage) || _avatarFingerprint != other._avatarFingerprint)
+        {
+            _avatarFingerprint = other._avatarFingerprint;
+            _avatarImage = other._avatarImage;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AvatarImage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasAvatar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowInitials)));
+        }
+
         IsPeerOnline = other.IsPeerOnline;
     }
 
@@ -562,3 +682,4 @@ public sealed class ChatListRowVm : INotifyPropertyChanged
         };
     }
 }
+

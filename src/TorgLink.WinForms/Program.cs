@@ -7,6 +7,7 @@ using ShortP2P.Auth.Data;
 using ShortP2P.Client;
 using ShortP2P.Client.ChatMedia;
 using ShortP2P.Client.Data;
+using ShortP2P.Client.ProfileBackup;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Client.Routing;
@@ -15,6 +16,8 @@ using ShortP2P.Discovery.Profile;
 using ShortP2P.MessengerServer.Contracts.Dtos;
 using ShortP2P.Transport;
 using SQLitePCL;
+using TorgLink.Localization;
+using TorgLink.WinForms.Localization;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace TorgLink.WinForms;
@@ -32,6 +35,7 @@ internal static class Program
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TorgLink", "WinForms");
         Directory.CreateDirectory(appRoot);
+        WinFormsLanguageBootstrap.Initialize(appRoot);
 
         var services = new ServiceCollection();
         services.AddLogging(b =>
@@ -48,11 +52,17 @@ internal static class Program
         services.AddSingleton<ChatRepository>();
         services.AddSingleton<ChatSessionCache>();
         services.AddSingleton<IMessengerServerRepository, SqliteMessengerServerRepository>();
+        services.AddSingleton<ProfileBackupService>();
         services.AddSingleton<DeviceIdProvider>();
         services.AddSingleton<MessengerServerManager>();
         services.AddSingleton<MessengerServerSyncService>();
         services.AddSingleton<P2pRoutingSettingsStore>();
-        services.AddSingleton(_ => ChatMediaOptions.LoadOrDefault(Path.Combine(appRoot, "chat-media.json")));
+        services.AddSingleton(_ =>
+        {
+            var opts = ChatMediaOptions.LoadOrDefault(Path.Combine(appRoot, "chat-media.json"));
+            MediaEconomy.ApplyStandardCeilings(opts);
+            return opts;
+        });
         services.AddSingleton<IPeerProfileStore, SqlitePeerProfileStore>();
         services.AddSingleton<ILocalPeerProfileSource, AuthLocalPeerProfileSource>();
         services.AddSingleton(sp =>
@@ -106,7 +116,6 @@ internal static class Program
             return scan;
         });
         services.AddTransient<SettingsForm>();
-        services.AddTransient<ProfileForm>();
         services.AddTransient<LoginForm>();
         services.AddTransient<RegisterForm>();
         services.AddTransient<MainForm>();
@@ -121,10 +130,17 @@ internal static class Program
         // MessengerServerSyncService, MessengerServerManager). Sync ServiceProvider.Dispose()
         // throws InvalidOperationException for those — always tear down via DisposeAsync.
         var provider = services.BuildServiceProvider();
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
+        logger.LogInformation("TorgLink WinForms (net472) started");
+
         try
         {
-            var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
-            logger.LogInformation("TorgLink WinForms (net472) started");
+            if (!LanguageService.HasChosen)
+            {
+                using var languageSelect = new LanguageSelectForm();
+                if (languageSelect.ShowDialog() != DialogResult.OK)
+                    return;
+            }
 
             while (true)
             {

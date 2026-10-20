@@ -411,10 +411,16 @@ internal static class AppEndpoints
         var chat = await chats.GetChatAsync(id).ConfigureAwait(false);
         if (chat == null)
             return Results.NotFound();
+        var mime = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+        var limit = MediaFileLimits.LimitFor(p2p.Settings.TrafficQuality, mime);
+        if (file.Length > limit)
+            return Results.BadRequest(new { error = $"File is larger than {FormatByteLimit(limit)}." });
+
         await using var ms = new MemoryStream();
         await file.CopyToAsync(ms).ConfigureAwait(false);
         var bytes = ms.ToArray();
-        var mime = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+        if (bytes.Length > limit)
+            return Results.BadRequest(new { error = $"File is larger than {FormatByteLimit(limit)}." });
         var logger = logs.CreateLogger("SendFile");
         AppLog.BinaryLoaded("chat-file", file.FileName, bytes.Length);
         try
@@ -1024,6 +1030,13 @@ internal static class AppEndpoints
             return deny;
         await p2p.LocalScan.ScanAsync(LocalNetworkScanner.DefaultScanListenDuration).ConfigureAwait(false);
         return Results.Ok();
+    }
+
+    private static string FormatByteLimit(int bytes)
+    {
+        if (bytes >= 1024 * 1024 && bytes % (1024 * 1024) == 0)
+            return $"{bytes / (1024 * 1024)} MB";
+        return $"{(bytes + 1023) / 1024} KB";
     }
 
     private sealed record LoginBody(string? Nickname, string? Password);

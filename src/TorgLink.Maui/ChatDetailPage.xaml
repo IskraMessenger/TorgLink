@@ -9,7 +9,7 @@
              BackgroundColor="{DynamicResource PageBackground}"
              SizeChanged="OnPageSizeChanged">
     <Grid x:Name="ChatRootGrid" ColumnDefinitions="320,*" ColumnSpacing="0">
-        <Border x:Name="SidebarPane" Grid.Column="0" BackgroundColor="{DynamicResource Surface}" StrokeThickness="0" Padding="8,12,8,0">
+        <Border x:Name="SidebarPane" Grid.Column="0" BackgroundColor="{DynamicResource ChatSidebarBackground}" StrokeThickness="0" Padding="8,12,8,0">
             <Grid RowDefinitions="Auto,*">
                 <Grid Padding="8,0,8,10" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                     <Button Grid.Column="1" Text="+" FontSize="22" WidthRequest="36" HeightRequest="36"
@@ -31,7 +31,14 @@
                                             BackgroundColor="{Binding AvatarColor}"
                                             HorizontalOptions="Center" VerticalOptions="Center" />
                                     <Label Text="{Binding Initials}" TextColor="White" FontAttributes="Bold" FontSize="15"
-                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                           HorizontalOptions="Center" VerticalOptions="Center"
+                                           IsVisible="{Binding ShowInitials}" />
+                                    <Border WidthRequest="48" HeightRequest="48" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 24"
+                                            HorizontalOptions="Center" VerticalOptions="Center"
+                                            IsVisible="{Binding HasAvatar}">
+                                        <Image Source="{Binding AvatarImage}" Aspect="AspectFill" />
+                                    </Border>
                                     <Ellipse WidthRequest="12" HeightRequest="12" Fill="#34C759"
                                              HorizontalOptions="End" VerticalOptions="End" Stroke="White"
                                              StrokeThickness="2" IsVisible="{Binding IsPeerOnline}" />
@@ -58,7 +65,7 @@
 
         <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto,Auto">
             <Grid RowDefinitions="Auto,Auto" BackgroundColor="{DynamicResource Surface}">
-                <Grid Padding="8,8,12,4" ColumnDefinitions="36,48,*,Auto,Auto" ColumnSpacing="8">
+                <Grid Padding="8,8,12,4" ColumnDefinitions="36,48,*,Auto,Auto,Auto" ColumnSpacing="8">
                     <Button Text="‹" FontSize="28" BackgroundColor="Transparent"
                             TextColor="{DynamicResource MidnightBlue}" Padding="0" Clicked="OnBackClicked" />
                     <Grid Grid.Column="1" WidthRequest="40" HeightRequest="40" x:Name="PeerAvatarHost">
@@ -81,11 +88,15 @@
                         <Label x:Name="PeerIdLabel" FontSize="10" TextColor="{DynamicResource MutedText}"
                                LineBreakMode="TailTruncation" />
                     </VerticalStackLayout>
-                    <Button x:Name="BlockPeerButton" Grid.Column="3" Text="&#x1F6AB;" FontSize="18"
+                    <Button x:Name="PathModeButton" Grid.Column="3" FontSize="11"
+                            Padding="6,0" HeightRequest="36" MinimumWidthRequest="72"
+                            BackgroundColor="Transparent" TextColor="{DynamicResource MidnightBlue}"
+                            VerticalOptions="Center" Clicked="OnPathModeClicked" />
+                    <Button x:Name="BlockPeerButton" Grid.Column="4" Text="&#x1F6AB;" FontSize="18"
                             Padding="0" WidthRequest="40" HeightRequest="40"
                             BackgroundColor="Transparent" VerticalOptions="Start"
                             Clicked="OnBlockPeerClicked" />
-                    <Button x:Name="ClearChatButton" Grid.Column="4" Text="&#x1F5D1;&#xFE0F;" FontSize="18"
+                    <Button x:Name="ClearChatButton" Grid.Column="5" Text="&#x1F5D1;&#xFE0F;" FontSize="18"
                             Padding="0" WidthRequest="40" HeightRequest="40"
                             BackgroundColor="Transparent" VerticalOptions="Start"
                             Clicked="OnClearChatClicked" />
@@ -130,8 +141,12 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Label x:Name="DeliveryIssueLabel" Grid.Row="2" TextColor="{DynamicResource Danger}" IsVisible="False"
-                   LineBreakMode="WordWrap" Margin="12,0" FontSize="12" />
+            <VerticalStackLayout Grid.Row="2" Margin="12,0" Spacing="2">
+                <Label x:Name="SessionStatusLabel" FontSize="12"
+                       TextColor="{DynamicResource MutedText}" LineBreakMode="TailTruncation" />
+                <Label x:Name="DeliveryIssueLabel" TextColor="{DynamicResource Danger}" IsVisible="False"
+                       LineBreakMode="WordWrap" FontSize="12" />
+            </VerticalStackLayout>
 
             <Grid Grid.Row="3" Padding="8,6,8,10" RowDefinitions="Auto,Auto" RowSpacing="6"
                   BackgroundColor="{DynamicResource Surface}">

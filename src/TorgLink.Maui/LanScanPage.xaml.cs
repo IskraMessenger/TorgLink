@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
-using TorgLink.Maui.Localization;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.Localization;
 
 namespace TorgLink.Maui;
 
@@ -25,12 +25,12 @@ public sealed class LanScanRow
             TransportKind.Udp => "UDP",
             TransportKind.Bluetooth => "Bluetooth",
             TransportKind.Infrared => "IrDA",
-            TransportKind.MessengerServer => Loc.T("network.servers"),
+            TransportKind.MessengerServer => LocalizationUtils.GetStringByKey("network.servers"),
             _ => p.TransportKind.ToString()
         };
         var seen = p.LastSeenUtc.ToLocalTime().ToString("g");
-        var presence = isPeerOnline ? Loc.T("online") : Loc.T("offline");
-        var detail = Loc.Tf("lan.detail", transport, presence, Loc.Tf("lan.last", seen));
+        var presence = isPeerOnline ? LocalizationUtils.GetStringByKey("online") : LocalizationUtils.GetStringByKey("offline");
+        var detail = LocalizationUtils.GetStringByKeyWithFormat("lan.detail", transport, presence, LocalizationUtils.GetStringByKeyWithFormat("lan.last", seen));
         if (!string.IsNullOrWhiteSpace(p.AboutMe))
         {
             var about = p.AboutMe.Trim();
@@ -71,9 +71,9 @@ public partial class LanScanPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Title = Loc.T("lan.title");
-        HintLabel.Text = Loc.T("lan.hint");
-        ScanButton.Text = Loc.T("lan.scan");
+        Title = LocalizationUtils.GetStringByKey("lan.title");
+        HintLabel.Text = LocalizationUtils.GetStringByKey("lan.hint");
+        ScanButton.Text = LocalizationUtils.GetStringByKey("lan.scan");
         _p2p.LocalScan.ClientsChanged += OnClientsChanged;
         RefreshRows();
     }
@@ -106,7 +106,7 @@ public partial class LanScanPage : ContentPage
     {
         ScanButton.IsEnabled = false;
         var sec = (int)Math.Round(LocalNetworkScanner.DefaultScanListenDuration.TotalSeconds);
-        StatusLabel.Text = Loc.Tf("lan.listening", sec);
+        StatusLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("lan.listening", sec);
         try
         {
             await _p2p.LocalScan.ScanAsync(LocalNetworkScanner.DefaultScanListenDuration).ConfigureAwait(true);
@@ -135,7 +135,8 @@ public partial class LanScanPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "LAN scan peer activation");
-            await DisplayAlert(Loc.T("lan.title"), ex.Message, Loc.T("ok")).ConfigureAwait(true);
+            await DisplayAlert(LocalizationUtils.GetStringByKey("lan.title"), ex.Message, LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
         }
     }
 }
+

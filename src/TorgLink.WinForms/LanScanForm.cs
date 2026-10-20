@@ -8,6 +8,7 @@ using ShortP2P.Discovery;
 using ShortP2P.MessengerServer.Contracts.Dtos;
 using ShortP2P.Transport;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -40,6 +41,7 @@ public sealed partial class LanScanForm : AppForm
     private readonly Func<Task>? _refreshChats;
 
     private readonly List<ContactRow> _rows = [];
+    private string _searchQuery = string.Empty;
     private bool _scanning;
 
     public LanScanForm()
@@ -73,13 +75,33 @@ public sealed partial class LanScanForm : AppForm
 
         _scan.Click += async (_, _) => await OnScanAsync().ConfigureAwait(true);
         _list.ItemActivate += async (_, _) => await OnActivateAsync().ConfigureAwait(true);
+        _search.TextChanged += (_, _) =>
+        {
+            _searchQuery = _search.Text.Trim();
+            BindList();
+        };
 
-        // Known chats (+ already-discovered peers). No GetClients/LAN probe until «Сканировать».
+        ApplyLocalizedUi();
+        // Known chats (+ already-discovered peers). No GetClients/LAN probe until Scan.
         Shown += async (_, _) =>
         {
-            _status.Text = "Нажмите «Сканировать» для опроса серверов и LAN.";
+            _status.Text = LocalizationUtils.GetStringByKey("lan.hint");
             await RefreshAsync().ConfigureAwait(true);
         };
+    }
+
+    protected override void ApplyLocalizedUi()
+    {
+        Text = LocalizationUtils.GetStringByKey("contacts.title");
+        _hint.Text = LocalizationUtils.GetStringByKey("lan.hint");
+        _colName.Text = LocalizationUtils.GetStringByKey("contact.nickname");
+        _colNetworkId.Text = LocalizationUtils.GetStringByKey("contact.network_id");
+        _colAbout.Text = LocalizationUtils.GetStringByKey("contact.about");
+        _colLastSeen.Text = LocalizationUtils.GetStringByKey("lan.last");
+        _scan.Text = LocalizationUtils.GetStringByKey("lan.scan");
+        _close.Text = LocalizationUtils.GetStringByKey("close");
+        _colTransport.Text = "Transport";
+        _colStatus.Text = LocalizationUtils.GetStringByKey("online");
     }
 
     private async Task RefreshAsync()
@@ -138,11 +160,17 @@ public sealed partial class LanScanForm : AppForm
     private void BindList()
     {
         EnsureListColumns();
+        IEnumerable<ContactRow> visible = _rows;
+        if (_searchQuery.Length > 0)
+            visible = _rows.Where(r =>
+                r.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                r.NetworkId.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+
         _list.BeginUpdate();
         try
         {
             _list.Items.Clear();
-            foreach (var r in _rows)
+            foreach (var r in visible)
             {
                 var item = new ListViewItem(r.Name) { Tag = r };
                 item.SubItems.Add(r.NetworkId);

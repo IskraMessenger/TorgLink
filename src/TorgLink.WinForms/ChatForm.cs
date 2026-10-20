@@ -8,6 +8,7 @@ using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
 using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery;
+using TorgLink.Localization;
 
 namespace TorgLink.WinForms;
 
@@ -90,11 +91,8 @@ public sealed partial class ChatForm : AppForm
         _messages.Resize += (_, _) => RelayoutMessageHeights();
         _messages.MouseClick += OnMessagesMouseClick;
 
-        _buttonTooltips.SetToolTip(_attachVoice,
-            "Голосовое (Ogg Opus): нажмите для начала записи, ещё раз — остановить и отправить. Битрейт зависит от режима экономии трафика.");
-        _buttonTooltips.SetToolTip(_attachImage, "Отправить изображение (сжатие по режиму экономии)");
-        _buttonTooltips.SetToolTip(_attachDocument, "Отправить документ");
-        _buttonTooltips.SetToolTip(_send, "Отправить сообщение");
+        ApplyLocalizedUi();
+        _deliveryPath.Click += (_, _) => ShowDeliveryPathMenu();
 
         _sidebar.DrawItem += OnSidebarDrawItem;
         _sidebar.SelectedIndexChanged += OnSidebarSelectedIndexChanged;
@@ -119,6 +117,7 @@ public sealed partial class ChatForm : AppForm
             if (_p2pSession != null)
             {
                 _p2pSession.MessagesChanged -= OnP2pMessagesChanged;
+                _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
                 _p2pSession = null;
             }
 
@@ -272,6 +271,7 @@ public sealed partial class ChatForm : AppForm
         }
 
         await RefreshChatEntityAsync().ConfigureAwait(true);
+        RefreshDeliveryPathButton();
     }
 
     private void EnsureSession(UserEntity user)
@@ -285,6 +285,9 @@ public sealed partial class ChatForm : AppForm
             () => new ChatP2PSession(_chat, user, _chats, sync, uiSync, logger),
             s => s.ApplyChatRow(_chat));
         _p2pSession.MessagesChanged += OnP2pMessagesChanged;
+        _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+        _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+        RefreshDeliveryPathButton();
     }
 
     private void DetachP2pMessagesChanged()
@@ -292,6 +295,90 @@ public sealed partial class ChatForm : AppForm
         if (_p2pSession == null)
             return;
         _p2pSession.MessagesChanged -= OnP2pMessagesChanged;
+        _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+    }
+
+    protected override void ApplyLocalizedUi()
+    {
+        _send.Text = LocalizationUtils.GetStringByKey("chat.send");
+        _buttonTooltips.SetToolTip(_attachVoice, LocalizationUtils.GetStringByKey("chat.voice"));
+        _buttonTooltips.SetToolTip(_attachImage, LocalizationUtils.GetStringByKey("chat.image_picker"));
+        _buttonTooltips.SetToolTip(_attachDocument, LocalizationUtils.GetStringByKey("chat.doc_picker"));
+        _buttonTooltips.SetToolTip(_deliveryPath, LocalizationUtils.GetStringByKey("chat.path_hint"));
+        _buttonTooltips.SetToolTip(_send, LocalizationUtils.GetStringByKey("chat.send"));
+        RefreshDeliveryPathButton();
+        Text = FormatTitle(_chat);
+    }
+
+    private void RefreshDeliveryPathButton()
+    {
+        if (_p2pSession == null)
+        {
+            _deliveryPath.Text = LocalizationUtils.GetStringByKey("chat.path_auto");
+            return;
+        }
+
+        _deliveryPath.Text = _p2pSession.DeliveryPath switch
+        {
+            ChatDeliveryPath.Server => LocalizationUtils.GetStringByKey("chat.path_server"),
+            ChatDeliveryPath.Mesh => LocalizationUtils.GetStringByKey("chat.path_mesh"),
+            _ => LocalizationUtils.GetStringByKey("chat.path_auto")
+        };
+    }
+
+    private void OnDeliveryPathChanged(object? sender, EventArgs e)
+    {
+        if (IsHandleCreated)
+            BeginInvoke(RefreshDeliveryPathButton);
+    }
+
+    private void ShowDeliveryPathMenu()
+    {
+        if (_p2pSession == null)
+            return;
+
+        var menu = new ContextMenuStrip();
+        ChatDeliveryPath? chosen = null;
+        menu.Items.Add(LocalizationUtils.GetStringByKey("chat.path_server_choice"), null,
+            (_, _) => chosen = ChatDeliveryPath.Server);
+        menu.Items.Add(LocalizationUtils.GetStringByKey("chat.path_mesh_choice"), null,
+            (_, _) => chosen = ChatDeliveryPath.Mesh);
+        menu.Closed += (_, _) =>
+        {
+            // Dispose after Closed finishes — disposing inside Closed races ToolStripDropDown.CreateHandle.
+            var path = chosen;
+            void Finish()
+            {
+                menu.Dispose();
+                if (path != null)
+                    _ = ApplyDeliveryPathAsync(path.Value);
+            }
+
+            if (IsHandleCreated)
+                BeginInvoke(Finish);
+            else
+                Finish();
+        };
+        menu.Show(_deliveryPath, new Point(0, _deliveryPath.Height));
+    }
+
+    private async Task ApplyDeliveryPathAsync(ChatDeliveryPath path)
+    {
+        if (_p2pSession == null)
+            return;
+
+        _logger.LogInformation("Chat {Peer}: switch delivery path to {Path}", _chat.PeerNickname, path);
+        try
+        {
+            await _p2pSession.SwitchDeliveryPathAsync(path).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Delivery path switch failed for chat {ChatId}", _chat.Id);
+            MessageBox.Show(this, ex.Message, "Путь доставки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        RefreshDeliveryPathButton();
     }
 
     private void OnChatListChanged(object? sender, EventArgs e)
@@ -359,11 +446,16 @@ public sealed partial class ChatForm : AppForm
         _p2pSession?.ApplyChatRow(fresh);
         if (IsHandleCreated && InvokeRequired)
         {
-            BeginInvoke(new Action(() => Text = FormatTitle(_chat)));
+            BeginInvoke(new Action(() =>
+            {
+                Text = FormatTitle(_chat);
+                RefreshDeliveryPathButton();
+            }));
             return;
         }
 
         Text = FormatTitle(_chat);
+        RefreshDeliveryPathButton();
     }
 
     private async Task RefreshSidebarAsync()

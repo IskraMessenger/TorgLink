@@ -18,8 +18,8 @@
 
         <ApplicationTitle>TorgLink</ApplicationTitle>
         <ApplicationId>com.torglink.maui</ApplicationId>
-        <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
-        <ApplicationVersion>7</ApplicationVersion>
+        <ApplicationDisplayVersion>0.2.0</ApplicationDisplayVersion>
+        <ApplicationVersion>8</ApplicationVersion>
 
         <!-- Unpackaged WinUI (same as ShortP2P.MauiApp). Do not set EnableMsixTooling here:
              it is evaluated after NuGet props and breaks WinUI's CustomBeforeMicrosoftCommonTargets chain
@@ -122,6 +122,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\TorgLink.Localization\TorgLink.Localization.csproj" />
         <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Auth\ShortP2P.Auth.csproj" />
         <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Client\ShortP2P.Client.csproj" />
         <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.TrustSystem\ShortP2P.TrustSystem.csproj" />
