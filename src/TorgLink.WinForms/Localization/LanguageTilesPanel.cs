@@ -3,8 +3,13 @@ using TorgLink.Localization;
 namespace TorgLink.WinForms.Localization;
 
 /// <summary>3×2 flag tiles for language selection / settings.</summary>
-internal sealed class LanguageTilesPanel : TableLayoutPanel
+internal sealed class LanguageTilesPanel : Panel
 {
+    private const int TileWidth = 120;
+    private const int TileHeight = 88;
+    private const int Gap = 12;
+    private const int Columns = 3;
+
     private AppLanguage _selected;
     private readonly Action<AppLanguage>? _onSelected;
     private readonly Dictionary<AppLanguage, Panel> _tiles = new();
@@ -13,25 +18,26 @@ internal sealed class LanguageTilesPanel : TableLayoutPanel
     {
         _selected = selected;
         _onSelected = onSelected;
-        ColumnCount = 3;
-        RowCount = 2;
-        Dock = DockStyle.Top;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        Padding = new Padding(4);
-
-        for (var c = 0; c < 3; c++)
-            ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-        for (var r = 0; r < 2; r++)
-            RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         var langs = LanguageService.AllLanguages;
+        var rows = Math.Max(1, (langs.Length + Columns - 1) / Columns);
+        var grid = new Size(
+            Columns * TileWidth + (Columns - 1) * Gap,
+            rows * TileHeight + (rows - 1) * Gap);
+        Size = grid;
+        MinimumSize = grid;
+        MaximumSize = grid;
+        Anchor = AnchorStyles.None;
+
         for (var i = 0; i < langs.Length; i++)
         {
             var lang = langs[i];
             var tile = CreateTile(lang);
+            tile.Location = new Point(
+                (i % Columns) * (TileWidth + Gap),
+                (i / Columns) * (TileHeight + Gap));
             _tiles[lang] = tile;
-            Controls.Add(tile, i % 3, i / 3);
+            Controls.Add(tile);
         }
 
         HighlightSelected();
@@ -47,9 +53,9 @@ internal sealed class LanguageTilesPanel : TableLayoutPanel
     {
         var panel = new Panel
         {
-            Width = 120,
-            Height = 88,
-            Margin = new Padding(6),
+            Width = TileWidth,
+            Height = TileHeight,
+            Margin = Padding.Empty,
             Cursor = Cursors.Hand,
             Tag = language
         };

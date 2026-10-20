@@ -117,30 +117,50 @@ public sealed partial class SettingsForm : AppForm
         {
             Name = "_tabLanguage",
             Text = LocalizationUtils.GetStringByKey("lang.title"),
-            UseVisualStyleBackColor = true
+            UseVisualStyleBackColor = true,
+            Padding = new Padding(12)
         };
         var page = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            Padding = new Padding(12),
-            AutoScroll = true
+            RowCount = 3,
+            AutoScroll = true,
+            Padding = new Padding(24, 16, 24, 16)
         };
-        _languageSection = new Label { AutoSize = true, Margin = new Padding(3, 0, 3, 8) };
-        _languageTiles = new LanguageTilesPanel(LanguageService.Current, OnLanguageTileSelected);
+        page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+        page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        _languageSection = new Label
+        {
+            AutoSize = true,
+            Anchor = AnchorStyles.None,
+            Font = new Font(Font.FontFamily, 12f, FontStyle.Bold),
+            Margin = new Padding(0, 8, 0, 12),
+            Text = LocalizationUtils.GetStringByKey("lang.choose")
+        };
+        _languageTiles = new LanguageTilesPanel(LanguageService.Current, OnLanguageTileSelected)
+        {
+            Margin = new Padding(0, 4, 0, 4)
+        };
         _languageWarning = new Label
         {
             AutoSize = true,
+            Anchor = AnchorStyles.None,
             ForeColor = System.Drawing.Color.DarkOrange,
-            MaximumSize = new System.Drawing.Size(700, 0),
-            Margin = new Padding(3, 12, 3, 0)
+            MaximumSize = new System.Drawing.Size(396, 0),
+            Margin = new Padding(0, 12, 0, 0),
+            TextAlign = ContentAlignment.MiddleCenter
         };
-        page.Controls.Add(_languageSection);
-        page.Controls.Add(_languageTiles);
-        page.Controls.Add(_languageWarning);
+        page.Controls.Add(_languageSection, 0, 0);
+        page.Controls.Add(_languageTiles, 0, 1);
+        page.Controls.Add(_languageWarning, 0, 2);
         _tabLanguage.Controls.Add(page);
-        _tabs.TabPages.Insert(0, _tabLanguage);
-        _tabs.SelectedIndex = 0;
+        // Insert before the native handle exists is a no-op in the tab list
+        // (the page is parented but never shown). Add registers it either way.
+        _tabs.TabPages.Add(_tabLanguage);
     }
 
     /// <summary>
@@ -202,7 +222,7 @@ public sealed partial class SettingsForm : AppForm
         Text = LocalizationUtils.GetStringByKey("settings.title");
         SetTabPageText(_tabLanguage, LocalizationUtils.GetStringByKey("lang.title"));
         if (_languageSection != null)
-            _languageSection.Text = LocalizationUtils.GetStringByKey("lang.section");
+            _languageSection.Text = LocalizationUtils.GetStringByKey("lang.choose");
         if (_languageTiles != null)
             _languageTiles.SetSelected(LanguageService.Current);
         if (_languageWarning != null)
