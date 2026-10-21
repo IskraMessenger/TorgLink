@@ -10,20 +10,21 @@ internal static class MauiLanguageBootstrap
 
     public static void Initialize()
     {
-        LanguageService.Configure(new MauiLanguagePreferences(), ApplyCulture);
+        // Shared portable LanguageService (not the removed MAUI-local duplicate).
+        TorgLink.Localization.LanguageService.Configure(new MauiLanguagePreferences(), ApplyCulture);
         if (!_hooked)
         {
             _hooked = true;
-            LanguageService.Changed += (_, _) =>
-                AppLog.SettingChanged("Language", LanguageService.Current);
+            TorgLink.Localization.LanguageService.Changed += (_, _) =>
+                AppLog.SettingChanged("Language", TorgLink.Localization.LanguageService.Current);
         }
 
-        LanguageService.Load();
+        TorgLink.Localization.LanguageService.Load();
     }
 
-    private static void ApplyCulture(AppLanguage language)
+    private static void ApplyCulture(TorgLink.Localization.AppLanguage language)
     {
-        var culture = LanguageService.ToCulture(language);
+        var culture = TorgLink.Localization.LanguageService.ToCulture(language);
         CultureInfo.DefaultThreadCurrentCulture = culture;
         CultureInfo.DefaultThreadCurrentUICulture = culture;
         CultureInfo.CurrentCulture = culture;

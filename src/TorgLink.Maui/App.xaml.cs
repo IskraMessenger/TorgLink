@@ -1,5 +1,5 @@
 using TorgLink.Localization;
-using TorgLink.Maui.Localization;
+using TorgLink.Maui.Localization; // MauiLanguageBootstrap
 using TorgLink.Maui.Services;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Client.Routing;
