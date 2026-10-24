@@ -9,6 +9,7 @@ using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
 using TorgLink.Localization;
+using TorgLink.Maui.Ui;
 
 namespace TorgLink.Maui;
 
