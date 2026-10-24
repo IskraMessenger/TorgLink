@@ -56,6 +56,7 @@ partial class SettingsForm
     private System.Windows.Forms.Button _save;
     private System.Windows.Forms.Button _keys;
     private System.Windows.Forms.Button _exportProfile;
+    private System.Windows.Forms.Button _shareProfile;
     private System.Windows.Forms.Button _about;
     private System.Windows.Forms.Button _close;
 
@@ -129,6 +130,7 @@ partial class SettingsForm
         this._save = new System.Windows.Forms.Button();
         this._keys = new System.Windows.Forms.Button();
         this._exportProfile = new System.Windows.Forms.Button();
+        this._shareProfile = new System.Windows.Forms.Button();
         this._about = new System.Windows.Forms.Button();
         this._close = new System.Windows.Forms.Button();
         this._root.SuspendLayout();
@@ -660,6 +662,7 @@ partial class SettingsForm
         this._buttons.Controls.Add(this._save);
         this._buttons.Controls.Add(this._keys);
         this._buttons.Controls.Add(this._exportProfile);
+        this._buttons.Controls.Add(this._shareProfile);
         this._buttons.Controls.Add(this._about);
         this._buttons.Controls.Add(this._close);
         this._buttons.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -696,23 +699,32 @@ partial class SettingsForm
         this._exportProfile.TabIndex = 2;
         this._exportProfile.Text = "Экспорт профиля (.tlp)…";
         //
+        // _shareProfile
+        //
+        this._shareProfile.AutoSize = true;
+        this._shareProfile.Location = new System.Drawing.Point(491, 3);
+        this._shareProfile.Name = "_shareProfile";
+        this._shareProfile.Size = new System.Drawing.Size(180, 35);
+        this._shareProfile.TabIndex = 3;
+        this._shareProfile.Text = "Поделиться профилем…";
+        //
         // _about
         //
         this._about.AutoSize = true;
-        this._about.Location = new System.Drawing.Point(295, 3);
+        this._about.Location = new System.Drawing.Point(677, 3);
         this._about.Name = "_about";
         this._about.Size = new System.Drawing.Size(130, 35);
-        this._about.TabIndex = 2;
+        this._about.TabIndex = 4;
         this._about.Text = "О программе";
         //
         // _close
         //
         this._close.AutoSize = true;
         this._close.DialogResult = System.Windows.Forms.DialogResult.OK;
-        this._close.Location = new System.Drawing.Point(431, 3);
+        this._close.Location = new System.Drawing.Point(813, 3);
         this._close.Name = "_close";
         this._close.Size = new System.Drawing.Size(100, 35);
-        this._close.TabIndex = 3;
+        this._close.TabIndex = 5;
         this._close.Text = "Закрыть";
         //
         // SettingsForm

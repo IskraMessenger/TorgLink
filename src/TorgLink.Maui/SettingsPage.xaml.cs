@@ -126,6 +126,7 @@ public partial class SettingsPage : ContentPage
         StorageTitleLabel.Text = LocalizationUtils.GetStringByKey("settings.storage");
         ExportKeysButton.Text = LocalizationUtils.GetStringByKey("settings.export_keys");
         ExportProfileButton.Text = LocalizationUtils.GetStringByKey("settings.export_profile");
+        ShareProfileButton.Text = LocalizationUtils.GetStringByKey("settings.share_profile");
         RoutingOpenButton.Text = LocalizationUtils.GetStringByKey("settings.routing_open");
         ConnectionTestButton.Text = LocalizationUtils.GetStringByKey("settings.connection_test");
         LogsButton.Text = LocalizationUtils.GetStringByKey("settings.logs");
@@ -415,6 +416,9 @@ public partial class SettingsPage : ContentPage
 
     private async void OnExportProfileClicked(object? sender, EventArgs e) =>
         await ProfileFileShare.ExportProfileAsync(this, _auth, _profileBackup, _logger).ConfigureAwait(true);
+
+    private async void OnShareProfileClicked(object? sender, EventArgs e) =>
+        await ProfileFileShare.ShareProfileAsync(this, _auth, _profileBackup, _logger).ConfigureAwait(true);
 
     private async void OnOpenRoutingClicked(object? sender, EventArgs e) =>
         await Navigation.PushAsync(MauiProgram.Services.GetRequiredService<RoutingSettingsPage>()).ConfigureAwait(true);

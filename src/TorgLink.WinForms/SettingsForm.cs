@@ -96,6 +96,8 @@ public sealed partial class SettingsForm : AppForm
         _keys.Click += (_, _) => CopyKeys();
         _exportProfile.Click += async (_, _) =>
             await ProfileFileShare.ExportProfileAsync(this, _auth, _backup, _logger).ConfigureAwait(true);
+        _shareProfile.Click += async (_, _) =>
+            await ProfileFileShare.ShareProfileAsync(this, _auth, _backup, _logger).ConfigureAwait(true);
         _about.Click += (_, _) => MessageBox.Show(this,
             LocalizationUtils.GetStringByKey("settings.about_body") +
             "\nTorgLink.WinForms 0.2.0 (.NET Framework 4.7.2)\nWindows 7 SP1+",
@@ -260,6 +262,7 @@ public sealed partial class SettingsForm : AppForm
         _save.Text = LocalizationUtils.GetStringByKey("save");
         _keys.Text = LocalizationUtils.GetStringByKey("settings.export_keys");
         _exportProfile.Text = LocalizationUtils.GetStringByKey("settings.export_profile");
+        _shareProfile.Text = LocalizationUtils.GetStringByKey("settings.share_profile");
         _about.Text = LocalizationUtils.GetStringByKey("settings.about");
         _close.Text = LocalizationUtils.GetStringByKey("close");
 
