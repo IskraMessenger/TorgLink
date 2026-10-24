@@ -10,41 +10,6 @@
     <ScrollView>
         <VerticalStackLayout Spacing="14" Padding="0,0,0,20">
             <local:AppHeaderView x:Name="Header" />
-            <Label x:Name="NodesTitle" FontAttributes="Bold" FontSize="16"
-                   TextColor="{DynamicResource MidnightBlue}" Margin="16,0" />
-            <CollectionView x:Name="NodesCollection" HeightRequest="180">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="16,8" ColumnDefinitions="52,*,Auto" ColumnSpacing="10">
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnNodeTapped" />
-                            </Grid.GestureRecognizers>
-                            <Grid WidthRequest="40" HeightRequest="40">
-                                <Border WidthRequest="40" HeightRequest="40" StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 20" BackgroundColor="{Binding AvatarColor}" />
-                                <Label Text="{Binding Initials}" TextColor="White" FontAttributes="Bold" FontSize="12"
-                                       HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Grid>
-                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
-                                       TextColor="{DynamicResource MidnightBlue}" LineBreakMode="TailTruncation" />
-                                <Label Text="{Binding IdShort}" FontSize="11" TextColor="{DynamicResource MutedText}"
-                                       LineBreakMode="TailTruncation" />
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="2" Spacing="2" VerticalOptions="Center">
-                                <Label Text="{Binding Status}" FontSize="11" TextColor="{DynamicResource OnlineGreen}"
-                                       HorizontalOptions="End" />
-                                <Label Text="{Binding Hops}" FontSize="11" TextColor="{DynamicResource MutedText}"
-                                       HorizontalOptions="End" />
-                            </VerticalStackLayout>
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-            <Label x:Name="MyQrSectionLabel" FontAttributes="Bold" FontSize="16"
-                   TextColor="{DynamicResource MidnightBlue}" Margin="16,4,16,0" />
-            <Image x:Name="QrImage" HeightRequest="200" WidthRequest="200" Aspect="AspectFit"
-                   HorizontalOptions="Center" BackgroundColor="{DynamicResource Surface}" />
             <Grid Margin="16,4" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10"
                   RowSpacing="10">
                 <Button x:Name="AddChatButton" Clicked="OnAddChatClicked" Style="{StaticResource NetworkTile}" />
