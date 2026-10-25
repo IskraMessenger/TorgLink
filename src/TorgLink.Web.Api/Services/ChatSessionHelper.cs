@@ -22,8 +22,11 @@ internal static class ChatSessionHelper
 
         await p2p.EnsureStartedAsync(user, cancellationToken).ConfigureAwait(false);
         await MessengerServersBootstrap.EnsureRunningAsync(p2p, logger, cancellationToken).ConfigureAwait(false);
-        await MessengerServersBootstrap.PublishChatRequestAsync(p2p, chat.PeerNetworkIdShort, logger, cancellationToken)
-            .ConfigureAwait(false);
+        if (!chat.IsBot)
+        {
+            await MessengerServersBootstrap.PublishChatRequestAsync(p2p, chat.PeerNetworkIdShort, logger, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         var session = p2p.GetSession(chat, user, auth, chats, null);
         if (!p2p.IsChatSessionStarted(chat.Id))
