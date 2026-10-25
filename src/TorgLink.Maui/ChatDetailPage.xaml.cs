@@ -312,8 +312,15 @@ public partial class ChatDetailPage : ContentPage
 
             var handshake = StartChatSessionIfNeededAsync(chat, session);
             var servers = MessengerServersBootstrap.EnsureRunningAsync(_p2p, _logger);
-            var publish = MessengerServersBootstrap.PublishChatRequestAsync(_p2p, chat.PeerNetworkIdShort, _logger);
-            await Task.WhenAll(handshake, servers, publish).ConfigureAwait(false);
+            if (chat.IsBot)
+            {
+                await Task.WhenAll(handshake, servers).ConfigureAwait(false);
+            }
+            else
+            {
+                var publish = MessengerServersBootstrap.PublishChatRequestAsync(_p2p, chat.PeerNetworkIdShort, _logger);
+                await Task.WhenAll(handshake, servers, publish).ConfigureAwait(false);
+            }
             // Do not PollEvents here: a second waiter used to replace the long-poll
             // waiter on the server and stall the next inbox message by ~25s.
         }

@@ -98,6 +98,7 @@ internal static class Program
                     await SyncChatNicknamesFromPresenceAsync(auth, chats, remote, ct).ConfigureAwait(false);
                     var bots = await sync.ProbeAndListRemoteBotsAsync(ct).ConfigureAwait(false);
                     scan.ApplyBotDirectory(MessengerServerSyncService.ToBotDirectoryEntries(bots));
+                    await sync.SyncBotKeysFromCatalogAsync(bots, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
