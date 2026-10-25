@@ -69,6 +69,8 @@ public static partial class StringCatalog
         ["contact.nickname"] = "Spitzname",
         ["contact.network_id"] = "Network ID",
         ["contact.about"] = "Über mich",
+        ["contact.bot"] = "Bot",
+        ["contact.bot_mark"] = "Bot",
         ["contact.not_set"] = "Nicht angegeben",
         ["profile.title"] = "Mein Profil",
         ["profile.save"] = "Speichern",

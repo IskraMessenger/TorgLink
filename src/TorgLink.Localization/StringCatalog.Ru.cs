@@ -70,6 +70,8 @@ public static partial class StringCatalog
         ["contact.nickname"] = "Ник",
         ["contact.network_id"] = "Network ID",
         ["contact.about"] = "О себе",
+        ["contact.bot"] = "Бот",
+        ["contact.bot_mark"] = "бот",
         ["contact.not_set"] = "Не указано",
         ["profile.title"] = "Мой профиль",
         ["profile.save"] = "Сохранить",

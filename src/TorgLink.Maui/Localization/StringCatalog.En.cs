@@ -66,6 +66,8 @@ internal static partial class StringCatalog
         ["contact.nickname"] = "Nickname",
         ["contact.network_id"] = "Network ID",
         ["contact.about"] = "About",
+        ["contact.bot"] = "Bot",
+        ["contact.bot_mark"] = "bot",
         ["contact.not_set"] = "Not set",
         ["profile.title"] = "My profile",
         ["profile.save"] = "Save",

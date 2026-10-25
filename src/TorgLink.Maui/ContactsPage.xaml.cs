@@ -5,6 +5,7 @@ using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
+using ShortP2P.Client.Services.MessengerServers;
 using ShortP2P.Discovery;
 using ShortP2P.Transport.Abstractions;
 using TorgLink.Localization;
@@ -20,6 +21,8 @@ public sealed class ContactRow
     public required string Initials { get; init; }
     public required Color AvatarColor { get; init; }
     public bool IsOnline { get; init; }
+    public bool IsBot { get; init; }
+    public string BotMark { get; init; } = "";
 }
 
 public partial class ContactsPage : ContentPage
@@ -91,6 +94,13 @@ public partial class ContactsPage : ContentPage
         try
         {
             await _p2p.LocalScan.ScanAsync(LocalNetworkScanner.DefaultScanListenDuration).ConfigureAwait(true);
+            if (_p2p.MessengerServers != null)
+            {
+                var bots = await _p2p.MessengerServers.ProbeAndListRemoteBotsAsync(CancellationToken.None)
+                    .ConfigureAwait(true);
+                _p2p.LocalScan.ApplyBotDirectory(MessengerServerSyncService.ToBotDirectoryEntries(bots));
+            }
+
             await RefreshAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
@@ -127,16 +137,22 @@ public partial class ContactsPage : ContentPage
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var c in chats)
         {
-            seen.Add(ChatRepository.CanonicalPeerNetworkId(c.PeerNetworkIdShort));
+            var chatId = ChatRepository.CanonicalPeerNetworkId(c.PeerNetworkIdShort);
+            seen.Add(chatId);
             await TrySyncChatNicknameFromLanAsync(c).ConfigureAwait(false);
+            var chatPeer = FindPeer(chatId);
+            var chatIsBot = chatPeer?.IsBot == true;
             built.Add(new ContactRow
             {
                 Chat = c,
+                Peer = chatPeer,
                 Name = c.PeerNickname,
                 Detail = c.PeerNetworkIdShort,
                 Initials = TorgLinkTheme.Initials(c.PeerNickname),
                 AvatarColor = TorgLinkTheme.AvatarColor(c.PeerNetworkIdShort),
-                IsOnline = IsOnline(c.PeerNetworkIdShort, null)
+                IsOnline = chatIsBot ? false : IsOnline(c.PeerNetworkIdShort, chatPeer),
+                IsBot = chatIsBot,
+                BotMark = chatIsBot ? BotMarkText() : ""
             });
         }
 
@@ -154,7 +170,9 @@ public partial class ContactsPage : ContentPage
                 Detail = $"{id} · {TransportLabel(p)}",
                 Initials = TorgLinkTheme.Initials(nick),
                 AvatarColor = TorgLinkTheme.AvatarColor(id),
-                IsOnline = IsOnline(id, p)
+                IsOnline = p.IsBot ? false : IsOnline(id, p),
+                IsBot = p.IsBot,
+                BotMark = p.IsBot ? BotMarkText() : ""
             });
         }
 
@@ -185,6 +203,19 @@ public partial class ContactsPage : ContentPage
             return;
         }
     }
+
+    private DiscoveredLocalPeer? FindPeer(string networkIdShort)
+    {
+        foreach (var peer in _p2p.LocalScan.Clients)
+        {
+            if (ChatRepository.PeerNetworkIdsEqual(peer.NetworkId.ToShortString(), networkIdShort))
+                return peer;
+        }
+
+        return null;
+    }
+
+    private static string BotMarkText() => LocalizationUtils.GetStringByKey("contact.bot_mark");
 
     private bool IsOnline(string networkIdShort, DiscoveredLocalPeer? peer)
     {
@@ -221,8 +252,20 @@ public partial class ContactsPage : ContentPage
 
     private void OnContactRowLoaded(object? sender, EventArgs e)
     {
-        if (sender is View rowRoot)
-            ListRowHighlight.Attach(rowRoot);
+        if (sender is not View rowRoot)
+            return;
+
+        ApplyBotRowColor(rowRoot);
+        rowRoot.BindingContextChanged += (_, _) => ApplyBotRowColor(rowRoot);
+        ListRowHighlight.Attach(rowRoot);
+    }
+
+    private static void ApplyBotRowColor(View rowRoot)
+    {
+        var rest = rowRoot.BindingContext is ContactRow { IsBot: true }
+            ? Color.FromArgb("#F6E27A")
+            : Colors.Transparent;
+        ListRowHighlight.SetRestColor(rowRoot, rest);
     }
 
     private async void OnContactRowTapped(object? sender, TappedEventArgs e)

@@ -24,6 +24,8 @@ public sealed partial class LanScanForm : AppForm
         public required string Name { get; init; }
         public required string NetworkId { get; init; }
         public required string Transport { get; init; }
+        public required string Bot { get; init; }
+        public bool IsBot { get; init; }
         public required string Status { get; init; }
         public required string AboutMe { get; init; }
         public required string LastSeen { get; init; }
@@ -85,7 +87,7 @@ public sealed partial class LanScanForm : AppForm
         // Known chats (+ already-discovered peers). No GetClients/LAN probe until Scan.
         Shown += async (_, _) =>
         {
-            _status.Text = LocalizationUtils.GetStringByKey("lan.hint");
+            SetStatus("");
             await RefreshAsync().ConfigureAwait(true);
         };
     }
@@ -95,6 +97,7 @@ public sealed partial class LanScanForm : AppForm
         Text = LocalizationUtils.GetStringByKey("contacts.title");
         _hint.Text = LocalizationUtils.GetStringByKey("lan.hint");
         _colName.Text = LocalizationUtils.GetStringByKey("contact.nickname");
+        _colBot.Text = LocalizationUtils.GetStringByKey("contact.bot");
         _colNetworkId.Text = LocalizationUtils.GetStringByKey("contact.network_id");
         _colAbout.Text = LocalizationUtils.GetStringByKey("contact.about");
         _colLastSeen.Text = LocalizationUtils.GetStringByKey("lan.last");
@@ -122,6 +125,7 @@ public sealed partial class LanScanForm : AppForm
             seen.Add(id);
             await TrySyncChatNicknameFromLanAsync(c).ConfigureAwait(true);
             var peer = FindPeer(id);
+            var isBot = peer?.IsBot == true;
             _rows.Add(new ContactRow
             {
                 Chat = c,
@@ -129,9 +133,11 @@ public sealed partial class LanScanForm : AppForm
                 Name = c.PeerNickname,
                 NetworkId = c.PeerNetworkIdShort,
                 Transport = peer != null ? FormatTransport(peer.TransportKind) : "чат",
-                Status = IsOnline(id, peer) ? "онлайн" : "офлайн",
+                Bot = BotCell(isBot),
+                IsBot = isBot,
+                Status = isBot ? "—" : IsOnline(id, peer) ? "онлайн" : "офлайн",
                 AboutMe = TrimAbout(peer?.AboutMe, 40),
-                LastSeen = peer != null ? peer.LastSeenUtc.ToLocalTime().ToString("T") : "—"
+                LastSeen = isBot || peer == null ? "—" : peer.LastSeenUtc.ToLocalTime().ToString("T")
             });
         }
 
@@ -148,9 +154,11 @@ public sealed partial class LanScanForm : AppForm
                 Name = nick,
                 NetworkId = id,
                 Transport = FormatTransport(p.TransportKind),
-                Status = IsOnline(id, p) ? "онлайн" : "офлайн",
+                Bot = BotCell(p.IsBot),
+                IsBot = p.IsBot,
+                Status = p.IsBot ? "—" : IsOnline(id, p) ? "онлайн" : "офлайн",
                 AboutMe = TrimAbout(p.AboutMe, 40),
-                LastSeen = p.LastSeenUtc.ToLocalTime().ToString("T")
+                LastSeen = p.IsBot ? "—" : p.LastSeenUtc.ToLocalTime().ToString("T")
             });
         }
 
@@ -173,11 +181,18 @@ public sealed partial class LanScanForm : AppForm
             foreach (var r in visible)
             {
                 var item = new ListViewItem(r.Name) { Tag = r };
+                item.SubItems.Add(r.Bot);
                 item.SubItems.Add(r.NetworkId);
                 item.SubItems.Add(r.Transport);
                 item.SubItems.Add(r.Status);
                 item.SubItems.Add(r.AboutMe);
                 item.SubItems.Add(r.LastSeen);
+                if (r.IsBot)
+                {
+                    item.BackColor = Color.FromArgb(255, 236, 140);
+                    item.ForeColor = Color.Black;
+                }
+
                 _list.Items.Add(item);
             }
         }
@@ -199,12 +214,13 @@ public sealed partial class LanScanForm : AppForm
             return;
 
         _colName = new ColumnHeader { Text = "Имя", Width = 160 };
+        _colBot = new ColumnHeader { Text = LocalizationUtils.GetStringByKey("contact.bot"), Width = 70 };
         _colNetworkId = new ColumnHeader { Text = "Network id", Width = 180 };
         _colTransport = new ColumnHeader { Text = "Транспорт", Width = 100 };
         _colStatus = new ColumnHeader { Text = "Статус", Width = 80 };
         _colAbout = new ColumnHeader { Text = "О себе", Width = 160 };
         _colLastSeen = new ColumnHeader { Text = "Последний контакт", Width = 140 };
-        _list.Columns.AddRange([_colName, _colNetworkId, _colTransport, _colStatus, _colAbout, _colLastSeen]);
+        _list.Columns.AddRange([_colName, _colBot, _colNetworkId, _colTransport, _colStatus, _colAbout, _colLastSeen]);
     }
 
     private async Task TrySyncChatNicknameFromLanAsync(ChatEntity chat)
@@ -258,8 +274,17 @@ public sealed partial class LanScanForm : AppForm
             _ => k.ToString()
         };
 
-    private static string FormatStatusSummary(int serverClients) =>
-        $"Сервер: {serverClients} клиент(ов). Нажмите «Сканировать» для полного LAN-раунда.";
+    private void SetStatus(string text)
+    {
+        _status.Text = text;
+        _status.Visible = text.Length > 0;
+    }
+
+    private static string BotCell(bool isBot) =>
+        isBot ? LocalizationUtils.GetStringByKey("contact.bot_mark") : "";
+
+    private static string FormatStatusSummary(int serverClients, int bots) =>
+        $"Сервер: {serverClients} клиент(ов), {bots} бот(ов). Нажмите «Сканировать» для полного LAN-раунда.";
 
     private async Task OnActivateAsync()
     {
@@ -327,26 +352,34 @@ public sealed partial class LanScanForm : AppForm
         var sec = (int)Math.Round(LocalNetworkScanner.DefaultScanListenDuration.TotalSeconds);
         try
         {
-            // Explicit GetClients first (do not rely only on swallowed PrioritizedExternalDiscoveryRound).
-            _status.Text = "Опрос messenger-серверов (GetClients)…";
+            // Explicit GetClients + GetBots first (do not rely only on swallowed PrioritizedExternalDiscoveryRound).
+            SetStatus("Опрос messenger-серверов (GetClients, боты)…");
             var remote = await ProbeGetClientsAsync().ConfigureAwait(true);
             _scanner.ApplyMessengerServerDirectory(Program.ToDirectoryEntries(remote));
+            var bots = await ProbeBotsAsync().ConfigureAwait(true);
+            if (bots != null)
+                _scanner.ApplyBotDirectory(MessengerServerSyncService.ToBotDirectoryEntries(bots));
             await RefreshAsync().ConfigureAwait(true);
-            _status.Text = $"Сервер: {remote.Count} клиент(ов). Слушаем LAN {sec} с…";
+            SetStatus($"Сервер: {remote.Count} клиент(ов), {bots?.Count ?? 0} бот(ов). Слушаем LAN {sec} с…");
 
             await _scanner.ScanAsync(LocalNetworkScanner.DefaultScanListenDuration).ConfigureAwait(true);
 
             // Refresh directory after LAN window (ScanAsync also runs the discovery hook).
             remote = await ProbeGetClientsAsync().ConfigureAwait(true);
             _scanner.ApplyMessengerServerDirectory(Program.ToDirectoryEntries(remote));
+            bots = await ProbeBotsAsync().ConfigureAwait(true);
+            if (bots != null)
+                _scanner.ApplyBotDirectory(MessengerServerSyncService.ToBotDirectoryEntries(bots));
             await RefreshAsync().ConfigureAwait(true);
-            _status.Text = FormatStatusSummary(remote.Count);
+            SetStatus(bots == null
+                ? "Список ботов не получен — проверьте «Серверы» (active/trusted)."
+                : FormatStatusSummary(remote.Count, bots.Count));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Contacts scan");
             MessageBox.Show(this, ex.Message, "Контакты", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            _status.Text = "";
+            SetStatus("");
         }
         finally
         {
@@ -375,8 +408,23 @@ public sealed partial class LanScanForm : AppForm
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "GetClients probe failed");
-            _status.Text = "GetClients не удался — проверьте «Серверы» (active/trusted).";
+            SetStatus("GetClients не удался — проверьте «Серверы» (active/trusted).");
             return Array.Empty<ClientPresenceDto>();
+        }
+    }
+
+    private async Task<IReadOnlyList<BotCatalogDto>?> ProbeBotsAsync()
+    {
+        try
+        {
+            var bots = await _sync.ProbeAndListRemoteBotsAsync(CancellationToken.None).ConfigureAwait(false);
+            _logger.LogInformation("GetBots returned {Count} bot(s)", bots.Count);
+            return bots;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "GetBots probe failed");
+            return null;
         }
     }
 

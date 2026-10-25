@@ -66,6 +66,8 @@ internal static partial class StringCatalog
         ["contact.nickname"] = "昵称",
         ["contact.network_id"] = "Network ID",
         ["contact.about"] = "关于我",
+        ["contact.bot"] = "机器人",
+        ["contact.bot_mark"] = "机器人",
         ["contact.not_set"] = "未设置",
         ["profile.title"] = "我的资料",
         ["profile.save"] = "保存",

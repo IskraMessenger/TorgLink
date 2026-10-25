@@ -9,6 +9,7 @@ partial class LanScanForm
     private System.Windows.Forms.TextBox _search;
     private System.Windows.Forms.ListView _list;
     private System.Windows.Forms.ColumnHeader _colName;
+    private System.Windows.Forms.ColumnHeader _colBot;
     private System.Windows.Forms.ColumnHeader _colNetworkId;
     private System.Windows.Forms.ColumnHeader _colTransport;
     private System.Windows.Forms.ColumnHeader _colStatus;
@@ -37,6 +38,7 @@ partial class LanScanForm
         this._search = new System.Windows.Forms.TextBox();
         this._list = new System.Windows.Forms.ListView();
         this._colName = new System.Windows.Forms.ColumnHeader();
+        this._colBot = new System.Windows.Forms.ColumnHeader();
         this._colNetworkId = new System.Windows.Forms.ColumnHeader();
         this._colTransport = new System.Windows.Forms.ColumnHeader();
         this._colStatus = new System.Windows.Forms.ColumnHeader();
@@ -102,7 +104,7 @@ partial class LanScanForm
         // 
         // _list
         // 
-        this._list.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { this._colName, this._colNetworkId, this._colTransport, this._colStatus, this._colAbout, this._colLastSeen });
+        this._list.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { this._colName, this._colBot, this._colNetworkId, this._colTransport, this._colStatus, this._colAbout, this._colLastSeen });
         this._list.Dock = System.Windows.Forms.DockStyle.Fill;
         this._list.FullRowSelect = true;
         this._list.GridLines = true;
@@ -119,6 +121,11 @@ partial class LanScanForm
         // 
         this._colName.Text = "Имя";
         this._colName.Width = 160;
+        // 
+        // _colBot
+        // 
+        this._colBot.Text = "Бот";
+        this._colBot.Width = 70;
         // 
         // _colNetworkId
         // 
