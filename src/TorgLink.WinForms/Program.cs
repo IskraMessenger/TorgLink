@@ -1,7 +1,11 @@
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
+using NLog.Config;
 using NLog.Extensions.Logging;
+using NLog.Targets;
+using NLog.Targets.Wrappers;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client;
@@ -35,13 +39,21 @@ internal static class Program
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TorgLink", "WinForms");
         Directory.CreateDirectory(appRoot);
+        var logsDir = Path.Combine(appRoot, "logs");
+        Directory.CreateDirectory(logsDir);
+        ConfigureNLog(logsDir);
         WinFormsLanguageBootstrap.Initialize(appRoot);
 
         var services = new ServiceCollection();
         services.AddLogging(b =>
         {
             b.ClearProviders();
-            b.SetMinimumLevel(LogLevel.Information);
+#if DEBUG
+            b.SetMinimumLevel(LogLevel.Debug);
+#else
+            // Release: only Error+ (send/receive failures); Debug events are not recorded.
+            b.SetMinimumLevel(LogLevel.Error);
+#endif
             b.AddNLog();
         });
         services.AddSingleton(_ => new AppDatabase(Path.Combine(appRoot, "torglink.db")));
@@ -126,15 +138,12 @@ internal static class Program
         services.AddTransient<MessengerServersForm>();
         // LanScanForm is constructed from MainForm with UI callbacks.
 
-        if (File.Exists(Path.Combine(AppContext.BaseDirectory, "nlog.config")))
-            LogManager.Setup().LoadConfigurationFromFile(Path.Combine(AppContext.BaseDirectory, "nlog.config"));
-
         // Singletons include IAsyncDisposable-only services (LocalNetworkScanner,
         // MessengerServerSyncService, MessengerServerManager). Sync ServiceProvider.Dispose()
         // throws InvalidOperationException for those — always tear down via DisposeAsync.
         var provider = services.BuildServiceProvider();
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
-        logger.LogInformation("TorgLink WinForms (net472) started");
+        logger.LogDebug("TorgLink WinForms (net472) started; logs={LogsDir}", logsDir);
 
         try
         {
@@ -231,5 +240,36 @@ internal static class Program
                 continue;
             await chats.TryUpdatePeerNicknameAsync(chat.Id, nick).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// File logs under %LocalAppData%\TorgLink\WinForms\logs.
+    /// Debug build: Debug+; Release: Error+ only.
+    /// </summary>
+    private static void ConfigureNLog(string logsDirectory)
+    {
+        var config = new LoggingConfiguration();
+        var fileTarget = new FileTarget("logfile")
+        {
+            FileName = Path.Combine(logsDirectory, "torglink-${shortdate}.log"),
+            Layout = "${longdate}|${level:uppercase=true}|${logger}|${message}${onexception:inner=${newline}${exception:format=tostring}}",
+            ArchiveAboveSize = 5_000_000,
+            MaxArchiveFiles = 14,
+            KeepFileOpen = false,
+            Encoding = Encoding.UTF8,
+            CreateDirs = true
+        };
+        var asyncTarget = new AsyncTargetWrapper("asyncLogfile", fileTarget)
+        {
+            QueueLimit = 10000,
+            OverflowAction = AsyncTargetWrapperOverflowAction.Discard
+        };
+        config.AddTarget(asyncTarget);
+#if DEBUG
+        config.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, asyncTarget);
+#else
+        config.AddRule(NLog.LogLevel.Error, NLog.LogLevel.Fatal, asyncTarget);
+#endif
+        LogManager.Configuration = config;
     }
 }
