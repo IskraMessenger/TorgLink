@@ -1,11 +1,7 @@
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
-using NLog.Config;
 using NLog.Extensions.Logging;
-using NLog.Targets;
-using NLog.Targets.Wrappers;
 using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client;
@@ -41,19 +37,15 @@ internal static class Program
         Directory.CreateDirectory(appRoot);
         var logsDir = Path.Combine(appRoot, "logs");
         Directory.CreateDirectory(logsDir);
-        ConfigureNLog(logsDir);
+        ConfigureNLog();
         WinFormsLanguageBootstrap.Initialize(appRoot);
 
         var services = new ServiceCollection();
         services.AddLogging(b =>
         {
             b.ClearProviders();
-#if DEBUG
-            b.SetMinimumLevel(LogLevel.Debug);
-#else
-            // Release: only Error+ (send/receive failures); Debug events are not recorded.
-            b.SetMinimumLevel(LogLevel.Error);
-#endif
+            // Filtering is in nlog.config / nlog.Debug.config (copied as nlog.config per build).
+            b.SetMinimumLevel(LogLevel.Trace);
             b.AddNLog();
         });
         services.AddSingleton(_ => new AppDatabase(Path.Combine(appRoot, "torglink.db")));
@@ -243,33 +235,14 @@ internal static class Program
     }
 
     /// <summary>
-    /// File logs under %LocalAppData%\TorgLink\WinForms\logs.
-    /// Debug build: Debug+; Release: Error+ only.
+    /// Loads <c>nlog.config</c> from the app directory (Debug builds copy <c>nlog.Debug.config</c> as that name).
     /// </summary>
-    private static void ConfigureNLog(string logsDirectory)
+    private static void ConfigureNLog()
     {
-        var config = new LoggingConfiguration();
-        var fileTarget = new FileTarget("logfile")
-        {
-            FileName = Path.Combine(logsDirectory, "torglink-${shortdate}.log"),
-            Layout = "${longdate}|${level:uppercase=true}|${logger}|${message}${onexception:inner=${newline}${exception:format=tostring}}",
-            ArchiveAboveSize = 5_000_000,
-            MaxArchiveFiles = 14,
-            KeepFileOpen = false,
-            Encoding = Encoding.UTF8,
-            CreateDirs = true
-        };
-        var asyncTarget = new AsyncTargetWrapper("asyncLogfile", fileTarget)
-        {
-            QueueLimit = 10000,
-            OverflowAction = AsyncTargetWrapperOverflowAction.Discard
-        };
-        config.AddTarget(asyncTarget);
-#if DEBUG
-        config.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, asyncTarget);
-#else
-        config.AddRule(NLog.LogLevel.Error, NLog.LogLevel.Fatal, asyncTarget);
-#endif
-        LogManager.Configuration = config;
+        var configPath = Path.Combine(AppContext.BaseDirectory, "nlog.config");
+        if (!File.Exists(configPath))
+            return;
+
+        LogManager.Setup().LoadConfigurationFromFile(configPath);
     }
 }
