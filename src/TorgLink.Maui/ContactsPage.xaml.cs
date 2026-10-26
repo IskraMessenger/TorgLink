@@ -99,6 +99,8 @@ public partial class ContactsPage : ContentPage
                 var bots = await _p2p.MessengerServers.ProbeAndListRemoteBotsAsync(CancellationToken.None)
                     .ConfigureAwait(true);
                 _p2p.LocalScan.ApplyBotDirectory(MessengerServerSyncService.ToBotDirectoryEntries(bots));
+                await _p2p.MessengerServers.SyncBotKeysFromCatalogAsync(bots, CancellationToken.None)
+                    .ConfigureAwait(true);
             }
 
             await RefreshAsync().ConfigureAwait(true);

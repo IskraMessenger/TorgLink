@@ -35,13 +35,17 @@ internal static class Program
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TorgLink", "WinForms");
         Directory.CreateDirectory(appRoot);
+        var logsDir = Path.Combine(appRoot, "logs");
+        Directory.CreateDirectory(logsDir);
+        ConfigureNLog();
         WinFormsLanguageBootstrap.Initialize(appRoot);
 
         var services = new ServiceCollection();
         services.AddLogging(b =>
         {
             b.ClearProviders();
-            b.SetMinimumLevel(LogLevel.Information);
+            // Filtering is in nlog.config / nlog.Debug.config (copied as nlog.config per build).
+            b.SetMinimumLevel(LogLevel.Trace);
             b.AddNLog();
         });
         services.AddSingleton(_ => new AppDatabase(Path.Combine(appRoot, "torglink.db")));
@@ -126,15 +130,12 @@ internal static class Program
         services.AddTransient<MessengerServersForm>();
         // LanScanForm is constructed from MainForm with UI callbacks.
 
-        if (File.Exists(Path.Combine(AppContext.BaseDirectory, "nlog.config")))
-            LogManager.Setup().LoadConfigurationFromFile(Path.Combine(AppContext.BaseDirectory, "nlog.config"));
-
         // Singletons include IAsyncDisposable-only services (LocalNetworkScanner,
         // MessengerServerSyncService, MessengerServerManager). Sync ServiceProvider.Dispose()
         // throws InvalidOperationException for those — always tear down via DisposeAsync.
         var provider = services.BuildServiceProvider();
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("TorgLink.WinForms");
-        logger.LogInformation("TorgLink WinForms (net472) started");
+        logger.LogDebug("TorgLink WinForms (net472) started; logs={LogsDir}", logsDir);
 
         try
         {
@@ -231,5 +232,17 @@ internal static class Program
                 continue;
             await chats.TryUpdatePeerNicknameAsync(chat.Id, nick).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Loads <c>nlog.config</c> from the app directory (Debug builds copy <c>nlog.Debug.config</c> as that name).
+    /// </summary>
+    private static void ConfigureNLog()
+    {
+        var configPath = Path.Combine(AppContext.BaseDirectory, "nlog.config");
+        if (!File.Exists(configPath))
+            return;
+
+        LogManager.Setup().LoadConfigurationFromFile(configPath);
     }
 }
