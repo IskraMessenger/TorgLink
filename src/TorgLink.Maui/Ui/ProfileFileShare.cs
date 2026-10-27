@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.ProfileBackup;
-using TorgLink.Maui.Services;
 using TorgLink.Localization;
+using TorgLink.Maui.Services;
 
-namespace TorgLink.Maui;
+namespace TorgLink.Maui.Ui;
 
 /// <summary>
 /// TRL-10 / TRL-24: export/import/share of the Logopass profile as a <c>.tlp</c> file.
