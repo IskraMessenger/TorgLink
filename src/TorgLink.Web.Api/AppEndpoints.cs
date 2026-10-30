@@ -36,6 +36,7 @@ internal static class AppEndpoints
         api.MapDelete("/chats/{id:int}", DeleteChat);
         api.MapPost("/chats/{id:int}/block", BlockChat);
         api.MapGet("/chats/{id:int}", GetChat);
+        api.MapGet("/chats/{id:int}/commands", GetBotCommands);
         api.MapGet("/chats/{id:int}/messages", ListMessages);
         api.MapPost("/chats/{id:int}/messages", SendText);
         // Same-origin SPA + cookie auth (SameSite=Lax): form uploads don't send antiforgery tokens.
@@ -321,8 +322,54 @@ internal static class AppEndpoints
             avatar = ChatSessionHelper.AvatarColor(chat.PeerNetworkIdShort),
             online = p2p.LocalScan.IsPeerSeenRecentlyOnLan(chat.PeerNetworkIdShort),
             safety,
-            keySource = chat.PeerKeySourceKind
+            keySource = chat.PeerKeySourceKind,
+            isBot = chat.IsBot
         });
+    }
+
+    private static async Task<IResult> GetBotCommands(int id, AuthService auth, ChatRepository chats,
+        UserP2pRuntime p2p, PeerBlacklist blacklist, ILoggerFactory logs)
+    {
+        if (NeedUser(auth) is { } deny)
+            return deny;
+        var chat = await chats.GetChatAsync(id).ConfigureAwait(false);
+        if (chat == null)
+            return Results.NotFound();
+        var u = auth.CurrentUser!;
+        await blacklist.EnsureLoadedAsync(u.Id).ConfigureAwait(false);
+        if (blacklist.IsBlocked(u.Id, chat.PeerNetworkIdShort))
+            return Results.Json(new { error = "blacklist.blocked" }, statusCode: 403);
+        if (!chat.IsBot)
+            return Results.Json(new { error = "chat.commands_fail" }, statusCode: 400);
+
+        if (p2p.MessengerServers == null)
+            return Results.Json(new { error = "chat.commands_fail" }, statusCode: 503);
+
+        try
+        {
+            await MessengerServersBootstrap.EnsureRunningAsync(p2p, logs.CreateLogger("Chat"), CancellationToken.None)
+                .ConfigureAwait(false);
+            var commands = await p2p.MessengerServers
+                .FetchBotCommandsAsync(chat.PeerNetworkIdShort)
+                .ConfigureAwait(false);
+            return Results.Json(new
+            {
+                botNetworkId = chat.PeerNetworkIdShort,
+                commands = commands.Select(c => new
+                {
+                    command = c.Command,
+                    description = c.Description,
+                    args = c.Args == null
+                        ? Array.Empty<object>()
+                        : c.Args.Select(a => new { argName = a.ArgName, argType = a.ArgType }).ToArray()
+                }).ToArray()
+            });
+        }
+        catch (Exception ex)
+        {
+            logs.CreateLogger("Chat").LogWarning(ex, "Bot commands for chat {ChatId}", id);
+            return Results.Json(new { error = "chat.commands_fail" }, statusCode: 502);
+        }
     }
 
     private static async Task<IResult> ListMessages(int id, AuthService auth, ChatRepository chats,

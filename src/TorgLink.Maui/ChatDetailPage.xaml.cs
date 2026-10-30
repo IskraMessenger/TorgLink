@@ -190,6 +190,8 @@ public partial class ChatDetailPage : ContentPage
         SetControlHint(ClearChatButton, LocalizationUtils.GetStringByKey("chat.delete_hint"));
         SetControlHint(EmergencyUntrustButton, LocalizationUtils.GetStringByKey("safety.untrust_hint"));
         SetControlHint(PathModeButton, LocalizationUtils.GetStringByKey("chat.path_hint"));
+        SetControlHint(BotCommandsButton, LocalizationUtils.GetStringByKey("chat.commands"));
+        BotCommandsButton.IsVisible = chat.IsBot;
         MessageEntry.Placeholder = LocalizationUtils.GetStringByKey("chat.message_ph");
         _chat = chat;
         _peerNetworkIdShort = chat.PeerNetworkIdShort;
@@ -528,6 +530,43 @@ public partial class ChatDetailPage : ContentPage
         SemanticProperties.SetDescription(view, text);
     }
 
+    private async void OnBotCommandsClicked(object? sender, EventArgs e)
+    {
+        if (_chat is not { IsBot: true })
+            return;
+
+        var sync = _p2p.MessengerServers;
+        if (sync == null)
+        {
+            await DisplayAlert(
+                LocalizationUtils.GetStringByKey("chat.commands_title"),
+                LocalizationUtils.GetStringByKey("chat.commands_fail"),
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
+            return;
+        }
+
+        try
+        {
+            await MessengerServersBootstrap.EnsureRunningAsync(_p2p, _logger).ConfigureAwait(true);
+            var commands = await sync.FetchBotCommandsAsync(_chat.PeerNetworkIdShort).ConfigureAwait(true);
+            var body = commands.Count == 0
+                ? LocalizationUtils.GetStringByKey("chat.commands_empty")
+                : BotCommandText.FormatList(commands);
+            await DisplayAlert(
+                LocalizationUtils.GetStringByKey("chat.commands_title"),
+                body,
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Bot commands failed for chat {ChatId}", _chat.Id);
+            await DisplayAlert(
+                LocalizationUtils.GetStringByKey("chat.commands_title"),
+                LocalizationUtils.GetStringByKey("chat.commands_fail"),
+                LocalizationUtils.GetStringByKey("ok")).ConfigureAwait(true);
+        }
+    }
+
     private void OnPeerPublicKeyChanged(object? sender, PeerPublicKeyChangedEventArgs e)
     {
         if (e.ChatId != ChatId)
@@ -540,6 +579,7 @@ public partial class ChatDetailPage : ContentPage
                 _chat = fresh;
                 Title = fresh.PeerNickname;
                 PeerNameLabel.Text = fresh.PeerNickname;
+                BotCommandsButton.IsVisible = fresh.IsBot;
                 RefreshSafetyLabel(fresh);
             }
 
