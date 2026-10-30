@@ -109,6 +109,7 @@ partial class LanScanForm
         this._list.FullRowSelect = true;
         this._list.GridLines = true;
         this._list.HideSelection = false;
+        this._list.ShowItemToolTips = true;
         this._list.Location = new System.Drawing.Point(15, 113);
         this._list.MultiSelect = false;
         this._list.Name = "_list";
@@ -125,7 +126,7 @@ partial class LanScanForm
         // _colBot
         // 
         this._colBot.Text = "Бот";
-        this._colBot.Width = 70;
+        this._colBot.Width = 420;
         // 
         // _colNetworkId
         // 

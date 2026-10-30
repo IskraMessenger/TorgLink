@@ -80,6 +80,7 @@
                                 <Label.Triggers>
                                     <DataTrigger TargetType="Label" Binding="{Binding IsBot}" Value="True">
                                         <Setter Property="TextColor" Value="#3A3A3C" />
+                                        <Setter Property="LineBreakMode" Value="WordWrap" />
                                     </DataTrigger>
                                 </Label.Triggers>
                             </Label>

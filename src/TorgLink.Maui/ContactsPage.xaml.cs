@@ -135,6 +135,9 @@ public partial class ContactsPage : ContentPage
         }
 
         var chats = await _chats.ListChatsAsync(u.Id).ConfigureAwait(false);
+        var versions = _p2p.MessengerServers == null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : await _p2p.MessengerServers.DescribeBotVersionsAsync().ConfigureAwait(false);
         var built = new List<ContactRow>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var c in chats)
@@ -143,13 +146,14 @@ public partial class ContactsPage : ContentPage
             seen.Add(chatId);
             await TrySyncChatNicknameFromLanAsync(c).ConfigureAwait(false);
             var chatPeer = FindPeer(chatId);
-            var chatIsBot = chatPeer?.IsBot == true;
+            var chatIsBot = c.IsBot || chatPeer?.IsBot == true;
+            var versionText = BotVersionText.Lookup(versions, chatId);
             built.Add(new ContactRow
             {
                 Chat = c,
                 Peer = chatPeer,
                 Name = c.PeerNickname,
-                Detail = c.PeerNetworkIdShort,
+                Detail = versionText.Length > 0 ? versionText : c.PeerNetworkIdShort,
                 Initials = TorgLinkTheme.Initials(c.PeerNickname),
                 AvatarColor = TorgLinkTheme.AvatarColor(c.PeerNetworkIdShort),
                 IsOnline = chatIsBot ? false : IsOnline(c.PeerNetworkIdShort, chatPeer),
@@ -165,11 +169,12 @@ public partial class ContactsPage : ContentPage
                 continue;
             seen.Add(id);
             var nick = string.IsNullOrWhiteSpace(p.Nickname) ? id : p.Nickname;
+            var versionText = BotVersionText.Lookup(versions, id);
             built.Add(new ContactRow
             {
                 Peer = p,
                 Name = nick,
-                Detail = $"{id} · {TransportLabel(p)}",
+                Detail = versionText.Length > 0 ? versionText : $"{id} · {TransportLabel(p)}",
                 Initials = TorgLinkTheme.Initials(nick),
                 AvatarColor = TorgLinkTheme.AvatarColor(id),
                 IsOnline = p.IsBot ? false : IsOnline(id, p),
