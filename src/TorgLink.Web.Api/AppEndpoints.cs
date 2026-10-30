@@ -636,20 +636,39 @@ internal static class AppEndpoints
             logs.CreateLogger("Contacts").LogWarning(ex, "Contacts probe");
         }
 
+        IReadOnlyDictionary<string, string> versions = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (p2p.MessengerServers != null)
+        {
+            try
+            {
+                versions = await p2p.MessengerServers.DescribeBotVersionsAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logs.CreateLogger("Contacts").LogDebug(ex, "Bot versions");
+            }
+        }
+
         var rows = new List<object>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var c in await chats.ListChatsAsync(u.Id).ConfigureAwait(false))
         {
-            seen.Add(ChatRepository.CanonicalPeerNetworkId(c.PeerNetworkIdShort));
+            var id = ChatRepository.CanonicalPeerNetworkId(c.PeerNetworkIdShort);
+            seen.Add(id);
+            var peer = p2p.LocalScan.Clients.FirstOrDefault(x =>
+                ChatRepository.PeerNetworkIdsEqual(x.NetworkId.ToShortString(), id));
+            var isBot = c.IsBot || peer?.IsBot == true;
+            var versionText = BotVersionText.Lookup(versions, id);
             rows.Add(new
             {
                 chatId = (int?)c.Id,
                 name = c.PeerNickname,
-                detail = c.PeerNetworkIdShort,
+                detail = versionText.Length > 0 ? versionText : c.PeerNetworkIdShort,
                 networkId = c.PeerNetworkIdShort,
                 initials = ChatSessionHelper.Initials(c.PeerNickname),
                 avatar = ChatSessionHelper.AvatarColor(c.PeerNetworkIdShort),
-                online = p2p.LocalScan.IsPeerSeenRecentlyOnLan(c.PeerNetworkIdShort)
+                online = p2p.LocalScan.IsPeerSeenRecentlyOnLan(c.PeerNetworkIdShort),
+                isBot
             });
         }
 
@@ -660,17 +679,19 @@ internal static class AppEndpoints
                 continue;
             seen.Add(id);
             var nick = string.IsNullOrWhiteSpace(p.Nickname) ? id : p.Nickname;
+            var versionText = BotVersionText.Lookup(versions, id);
             rows.Add(new
             {
                 chatId = (int?)null,
                 name = nick,
-                detail = $"{id} · {TransportLabel(p)}",
+                detail = versionText.Length > 0 ? versionText : $"{id} · {TransportLabel(p)}",
                 networkId = id,
                 initials = ChatSessionHelper.Initials(nick),
                 avatar = ChatSessionHelper.AvatarColor(id),
                 online = p.TransportKind == TransportKind.MessengerServer
                     ? p.MessengerServerOnline
-                    : p2p.LocalScan.IsPeerSeenRecentlyOnLan(id) || p.MessengerServerOnline
+                    : p2p.LocalScan.IsPeerSeenRecentlyOnLan(id) || p.MessengerServerOnline,
+                isBot = p.IsBot
             });
         }
 

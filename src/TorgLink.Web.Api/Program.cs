@@ -84,6 +84,7 @@ builder.Services.AddSingleton<IUdpTransportFactory, UdpTransportFactory>();
 builder.Services.AddSingleton<ChatSessionCache>();
 builder.Services.AddSingleton<P2pCryptoSessionCache>();
 builder.Services.AddSingleton<IMessengerServerRepository, SqliteMessengerServerRepository>();
+builder.Services.AddSingleton<IBotVersionRepository, SqliteBotVersionRepository>();
 builder.Services.AddSingleton<DeviceIdProvider>();
 builder.Services.AddSingleton<MessengerServerManager>();
 builder.Services.AddSingleton<MessengerServerSyncService>();

@@ -98,6 +98,7 @@ public sealed partial class LanScanForm : AppForm
         _hint.Text = LocalizationUtils.GetStringByKey("lan.hint");
         _colName.Text = LocalizationUtils.GetStringByKey("contact.nickname");
         _colBot.Text = LocalizationUtils.GetStringByKey("contact.bot");
+        _colBot.Width = 420;
         _colNetworkId.Text = LocalizationUtils.GetStringByKey("contact.network_id");
         _colAbout.Text = LocalizationUtils.GetStringByKey("contact.about");
         _colLastSeen.Text = LocalizationUtils.GetStringByKey("lan.last");
@@ -118,6 +119,7 @@ public sealed partial class LanScanForm : AppForm
         }
 
         var chats = await _chats.ListChatsAsync(u.Id).ConfigureAwait(true);
+        var versions = await _sync.DescribeBotVersionsAsync().ConfigureAwait(true);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var c in chats)
         {
@@ -125,7 +127,8 @@ public sealed partial class LanScanForm : AppForm
             seen.Add(id);
             await TrySyncChatNicknameFromLanAsync(c).ConfigureAwait(true);
             var peer = FindPeer(id);
-            var isBot = peer?.IsBot == true;
+            var isBot = c.IsBot || peer?.IsBot == true;
+            var versionText = BotVersionText.Lookup(versions, id);
             _rows.Add(new ContactRow
             {
                 Chat = c,
@@ -133,7 +136,7 @@ public sealed partial class LanScanForm : AppForm
                 Name = c.PeerNickname,
                 NetworkId = c.PeerNetworkIdShort,
                 Transport = peer != null ? FormatTransport(peer.TransportKind) : "чат",
-                Bot = BotCell(isBot),
+                Bot = BotCell(isBot, versionText),
                 IsBot = isBot,
                 Status = isBot ? "—" : IsOnline(id, peer) ? "онлайн" : "офлайн",
                 AboutMe = TrimAbout(peer?.AboutMe, 40),
@@ -148,13 +151,14 @@ public sealed partial class LanScanForm : AppForm
                 continue;
             seen.Add(id);
             var nick = string.IsNullOrWhiteSpace(p.Nickname) ? id : p.Nickname;
+            var versionText = BotVersionText.Lookup(versions, id);
             _rows.Add(new ContactRow
             {
                 Peer = p,
                 Name = nick,
                 NetworkId = id,
                 Transport = FormatTransport(p.TransportKind),
-                Bot = BotCell(p.IsBot),
+                Bot = BotCell(p.IsBot, versionText),
                 IsBot = p.IsBot,
                 Status = p.IsBot ? "—" : IsOnline(id, p) ? "онлайн" : "офлайн",
                 AboutMe = TrimAbout(p.AboutMe, 40),
@@ -172,7 +176,8 @@ public sealed partial class LanScanForm : AppForm
         if (_searchQuery.Length > 0)
             visible = _rows.Where(r =>
                 r.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                r.NetworkId.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+                r.NetworkId.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                r.Bot.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
 
         _list.BeginUpdate();
         try
@@ -180,7 +185,7 @@ public sealed partial class LanScanForm : AppForm
             _list.Items.Clear();
             foreach (var r in visible)
             {
-                var item = new ListViewItem(r.Name) { Tag = r };
+                var item = new ListViewItem(r.Name) { Tag = r, ToolTipText = r.Bot };
                 item.SubItems.Add(r.Bot);
                 item.SubItems.Add(r.NetworkId);
                 item.SubItems.Add(r.Transport);
@@ -214,7 +219,7 @@ public sealed partial class LanScanForm : AppForm
             return;
 
         _colName = new ColumnHeader { Text = "Имя", Width = 160 };
-        _colBot = new ColumnHeader { Text = LocalizationUtils.GetStringByKey("contact.bot"), Width = 70 };
+        _colBot = new ColumnHeader { Text = LocalizationUtils.GetStringByKey("contact.bot"), Width = 420 };
         _colNetworkId = new ColumnHeader { Text = "Network id", Width = 180 };
         _colTransport = new ColumnHeader { Text = "Транспорт", Width = 100 };
         _colStatus = new ColumnHeader { Text = "Статус", Width = 80 };
@@ -280,8 +285,12 @@ public sealed partial class LanScanForm : AppForm
         _status.Visible = text.Length > 0;
     }
 
-    private static string BotCell(bool isBot) =>
-        isBot ? LocalizationUtils.GetStringByKey("contact.bot_mark") : "";
+    private static string BotCell(bool isBot, string versions)
+    {
+        if (versions.Length > 0)
+            return versions;
+        return isBot ? LocalizationUtils.GetStringByKey("contact.bot_mark") : "";
+    }
 
     private static string FormatStatusSummary(int serverClients, int bots) =>
         $"Сервер: {serverClients} клиент(ов), {bots} бот(ов). Нажмите «Сканировать» для полного LAN-раунда.";

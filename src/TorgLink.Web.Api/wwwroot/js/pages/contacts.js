@@ -47,7 +47,7 @@ export function ContactsPage() {
             "div",
             { class: "meta" },
             el("div", { class: "title" }, c.name),
-            el("div", { class: "sub" }, c.detail)
+            el("div", { class: c.isBot ? "sub wrap" : "sub" }, c.detail)
           ),
           el("span", { class: "dot " + (c.online ? "on" : "off") })
         )
