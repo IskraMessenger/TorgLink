@@ -92,7 +92,9 @@ public sealed partial class ChatForm : AppForm
         _messages.MouseClick += OnMessagesMouseClick;
 
         ApplyLocalizedUi();
+        RefreshBotCommandsButton();
         _deliveryPath.Click += (_, _) => ShowDeliveryPathMenu();
+        _botCommands.Click += async (_, _) => await ShowBotCommandsAsync().ConfigureAwait(true);
 
         _sidebar.DrawItem += OnSidebarDrawItem;
         _sidebar.SelectedIndexChanged += OnSidebarSelectedIndexChanged;
@@ -169,6 +171,7 @@ public sealed partial class ChatForm : AppForm
             _chat = chat;
             _unreadChatIds.Remove(chat.Id);
             Text = FormatTitle(chat);
+            RefreshBotCommandsButton();
             SelectSidebarChat(chat.Id);
 
             var user = _auth.CurrentUser;
@@ -306,8 +309,46 @@ public sealed partial class ChatForm : AppForm
         _buttonTooltips.SetToolTip(_attachDocument, LocalizationUtils.GetStringByKey("chat.doc_picker"));
         _buttonTooltips.SetToolTip(_deliveryPath, LocalizationUtils.GetStringByKey("chat.path_hint"));
         _buttonTooltips.SetToolTip(_send, LocalizationUtils.GetStringByKey("chat.send"));
+        _botCommands.Text = LocalizationUtils.GetStringByKey("chat.commands");
+        _buttonTooltips.SetToolTip(_botCommands, LocalizationUtils.GetStringByKey("chat.commands"));
+        RefreshBotCommandsButton();
         RefreshDeliveryPathButton();
         Text = FormatTitle(_chat);
+    }
+
+    private void RefreshBotCommandsButton()
+    {
+        _botCommands.Visible = _chat.IsBot;
+    }
+
+    private async Task ShowBotCommandsAsync()
+    {
+        if (!_chat.IsBot)
+            return;
+
+        try
+        {
+            var commands = await _sync.FetchBotCommandsAsync(_chat.PeerNetworkIdShort).ConfigureAwait(true);
+            var body = commands.Count == 0
+                ? LocalizationUtils.GetStringByKey("chat.commands_empty")
+                : BotCommandText.FormatList(commands);
+            MessageBox.Show(
+                this,
+                body,
+                LocalizationUtils.GetStringByKey("chat.commands_title"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Bot commands failed for chat {ChatId}", _chat.Id);
+            MessageBox.Show(
+                this,
+                LocalizationUtils.GetStringByKey("chat.commands_fail"),
+                LocalizationUtils.GetStringByKey("chat.commands_title"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private void RefreshDeliveryPathButton()
@@ -449,12 +490,14 @@ public sealed partial class ChatForm : AppForm
             BeginInvoke(new Action(() =>
             {
                 Text = FormatTitle(_chat);
+                RefreshBotCommandsButton();
                 RefreshDeliveryPathButton();
             }));
             return;
         }
 
         Text = FormatTitle(_chat);
+        RefreshBotCommandsButton();
         RefreshDeliveryPathButton();
     }
 

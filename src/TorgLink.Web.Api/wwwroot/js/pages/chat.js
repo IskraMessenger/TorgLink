@@ -31,6 +31,39 @@ export function ChatPage(chatId) {
     errEl.textContent = err.includes(".") ? t(err) : err;
   }
 
+  function formatCommandLine(cmd) {
+    const name = (cmd.command || "").trim();
+    const args = Array.isArray(cmd.args) ? cmd.args : [];
+    const argText = args
+      .map((a) => {
+        const n = (a.argName || "").trim();
+        const ty = (a.argType || "").trim();
+        if (!n) return ty ? `<${ty}>` : "?";
+        if (!ty) return `<${n}>`;
+        return `<${n}:${ty}>`;
+      })
+      .join(" ");
+    const description = (cmd.description || "").trim();
+    let line = name;
+    if (argText) line += ` ${argText}`;
+    if (description) line += ` — ${description}`;
+    return line;
+  }
+
+  async function showBotCommands() {
+    try {
+      const data = await get(`/api/chats/${chatId}/commands`);
+      const list = Array.isArray(data.commands) ? data.commands : [];
+      const body =
+        list.length === 0
+          ? t("chat.commands_empty")
+          : list.map(formatCommandLine).join("\n");
+      window.alert(`${t("chat.commands_title")}\n\n${body}`);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : t("chat.commands_fail"));
+    }
+  }
+
   function renderHeader() {
     clear(headerEl);
     if (!chat) return;
@@ -51,7 +84,17 @@ export function ChatPage(chatId) {
         )
       )
     );
-    headerEl.appendChild(
+    const actions = el("div", { class: "row", style: { gap: "8px" } });
+    if (chat.isBot) {
+      actions.appendChild(
+        el(
+          "button",
+          { class: "btn ghost small", onclick: () => void showBotCommands() },
+          t("chat.commands")
+        )
+      );
+    }
+    actions.appendChild(
       el(
         "button",
         {
@@ -76,6 +119,7 @@ export function ChatPage(chatId) {
         "⋯"
       )
     );
+    headerEl.appendChild(actions);
     safetyEl.hidden = !chat.safety;
     safetyEl.textContent = chat.safety || "";
   }
