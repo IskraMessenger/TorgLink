@@ -1,3 +1,5 @@
+using TorgLink.Localization;
+
 namespace TorgLink.WinForms;
 
 public sealed partial class QrPreviewForm : AppForm
@@ -14,5 +16,10 @@ public sealed partial class QrPreviewForm : AppForm
         using var ms = new MemoryStream(png);
         _box.Image = new Bitmap(ms);
         _label.Text = caption;
+    }
+
+    protected override void ApplyLocalizedUi()
+    {
+        _close.Text = LocalizationUtils.GetStringByKey("close");
     }
 }
