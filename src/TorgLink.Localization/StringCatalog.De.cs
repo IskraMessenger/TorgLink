@@ -92,7 +92,7 @@ public static partial class StringCatalog
         ["blacklist.add"] = "Sperren",
         ["blacklist.add_title"] = "Sperrliste",
         ["blacklist.add_body"] = "„{0}“ ausblenden: Nachrichten und Einladungen werden empfangen, aber nicht angezeigt, und es gibt keine Benachrichtigungen.",
-        ["blacklist.add_body_bot"] = "Bot „{0}“ sperren: lokal ausblenden, auf allen Messenger-Servern mit diesem Bot auf die Sperrliste setzen und einen Claim uber diese Server senden.",
+        ["blacklist.add_body_bot"] = "Bot „{0}“ sperren: lokal ausblenden und einen Claim uber jeden Messenger-Server senden, auf dem er vorhanden ist.",
         ["blacklist.add_hint"] = "Zur Sperrliste hinzufügen",
         ["blacklist.unblock"] = "Entsperren",
         ["blacklist.blocked"] = "Dieser Benutzer steht auf der Sperrliste.",

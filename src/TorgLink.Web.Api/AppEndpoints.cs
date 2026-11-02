@@ -280,7 +280,7 @@ internal static class AppEndpoints
         AuthService auth,
         ChatRepository chats,
         PeerBlacklist blacklist,
-        MessengerServerSyncService sync)
+        MessengerServerManager messengerServers)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -294,11 +294,13 @@ internal static class AppEndpoints
         {
             try
             {
-                await sync.BlacklistBotAndClaimAsync(chat.PeerNetworkIdShort).ConfigureAwait(false);
+                await BotHostClaims
+                    .ClaimServersHostingBotAsync(messengerServers, chat.PeerNetworkIdShort)
+                    .ConfigureAwait(false);
             }
             catch
             {
-                // Local block already applied; server fan-out is best-effort.
+                // Local block already applied; claims are best-effort.
             }
         }
 

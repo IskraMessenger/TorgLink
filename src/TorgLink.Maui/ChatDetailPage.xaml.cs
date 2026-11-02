@@ -58,7 +58,6 @@ public partial class ChatDetailPage : ContentPage
     private readonly ChatMediaOptions _media;
     private readonly P2pRoutingSettingsStore _routingStore;
     private readonly MessengerServerManager _messengerServers;
-    private readonly MessengerServerSyncService _sync;
     private readonly PeerBlacklist _blacklist;
     private readonly ILogger<ChatDetailPage> _logger;
     private const int MessagesPageSize = 10;
@@ -89,7 +88,7 @@ public partial class ChatDetailPage : ContentPage
 
     public ChatDetailPage(AuthService auth, ChatRepository repo, UserP2pRuntime p2p, ChatMediaOptions media,
         P2pRoutingSettingsStore routingStore, MessengerServerManager messengerServers,
-        MessengerServerSyncService sync, PeerBlacklist blacklist,
+        PeerBlacklist blacklist,
         ILogger<ChatDetailPage> logger)
     {
         InitializeComponent();
@@ -99,7 +98,6 @@ public partial class ChatDetailPage : ContentPage
         _media = media;
         _routingStore = routingStore;
         _messengerServers = messengerServers;
-        _sync = sync;
         _blacklist = blacklist;
         _logger = logger;
         MessagesCollection.ItemsSource = _messageItems;
@@ -1599,7 +1597,7 @@ public partial class ChatDetailPage : ContentPage
             Host = this,
             Auth = _auth,
             Blacklist = _blacklist,
-            Sync = _sync,
+            MessengerServers = _messengerServers,
             Chats = _repo,
             P2p = _p2p,
             AfterChange = RefreshSidebarAsync,
@@ -1931,7 +1929,7 @@ public partial class ChatDetailPage : ContentPage
 
         var blocked = await BlacklistUi.ConfirmAndBlockAsync(
             this, _blacklist, user.Id, chat.PeerNetworkIdShort, chat.PeerNickname,
-            chat.IsBot, _sync).ConfigureAwait(true);
+            chat.IsBot, _messengerServers).ConfigureAwait(true);
         if (blocked && Navigation.NavigationStack.Count > 1)
             await Navigation.PopAsync().ConfigureAwait(true);
     }

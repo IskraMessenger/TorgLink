@@ -21,7 +21,6 @@ public partial class ChatsPage : ContentPage
     private readonly ChatRepository _chats;
     private readonly ILogger<ChatsPage> _logger;
     private readonly MessengerServerManager _messengerServers;
-    private readonly MessengerServerSyncService _sync;
     private readonly PeerBlacklist _blacklist;
     private readonly UserP2pRuntime _p2p;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -32,7 +31,7 @@ public partial class ChatsPage : ContentPage
     private bool _profileHooksAttached;
 
     public ChatsPage(AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        MessengerServerManager messengerServers, MessengerServerSyncService sync, PeerBlacklist blacklist,
+        MessengerServerManager messengerServers, PeerBlacklist blacklist,
         ILogger<ChatsPage> logger)
     {
         InitializeComponent();
@@ -40,7 +39,6 @@ public partial class ChatsPage : ContentPage
         _chats = chats;
         _p2p = p2p;
         _messengerServers = messengerServers;
-        _sync = sync;
         _blacklist = blacklist;
         _logger = logger;
         ChatsCollection.ItemsSource = _chatRows;
@@ -458,7 +456,7 @@ public partial class ChatsPage : ContentPage
         Host = this,
         Auth = _auth,
         Blacklist = _blacklist,
-        Sync = _sync,
+        MessengerServers = _messengerServers,
         Chats = _chats,
         P2p = _p2p,
         AfterChange = RefreshAsync
@@ -498,7 +496,7 @@ public partial class ChatsPage : ContentPage
 
         await BlacklistUi.ConfirmAndBlockAsync(
                 this, _blacklist, u.Id, chat.PeerNetworkIdShort, chat.PeerNickname,
-                chat.IsBot, _sync).ConfigureAwait(true);
+                chat.IsBot, _messengerServers).ConfigureAwait(true);
         await RefreshAsync().ConfigureAwait(true);
     }
 

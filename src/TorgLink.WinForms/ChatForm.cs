@@ -18,6 +18,7 @@ public sealed partial class ChatForm : AppForm
     private readonly ChatRepository _chats = null!;
     private readonly ChatSessionCache _sessions = null!;
     private readonly MessengerServerSyncService _sync = null!;
+    private readonly MessengerServerManager _messengerServers = null!;
     private readonly PeerBlacklist _blacklist = null!;
     private readonly ChatMediaOptions _media = null!;
     private readonly P2pRoutingSettings _routing = null!;
@@ -67,6 +68,7 @@ public sealed partial class ChatForm : AppForm
         ChatRepository chats,
         ChatSessionCache sessions,
         MessengerServerSyncService sync,
+        MessengerServerManager messengerServers,
         PeerBlacklist blacklist,
         ChatMediaOptions media,
         P2pRoutingSettings routing,
@@ -78,6 +80,7 @@ public sealed partial class ChatForm : AppForm
         _chats = chats;
         _sessions = sessions;
         _sync = sync;
+        _messengerServers = messengerServers;
         _blacklist = blacklist;
         _media = media;
         _routing = routing;
@@ -354,11 +357,11 @@ public sealed partial class ChatForm : AppForm
         {
             try
             {
-                await _sync.BlacklistBotAndClaimAsync(id).ConfigureAwait(true);
+                await BotHostClaims.ClaimServersHostingBotAsync(_messengerServers, id).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Bot server blacklist/claim failed for {BotId}", id);
+                _logger.LogWarning(ex, "Bot host claim failed for {BotId}", id);
             }
         }
 

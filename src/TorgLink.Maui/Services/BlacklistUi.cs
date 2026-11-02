@@ -13,7 +13,7 @@ internal static class BlacklistUi
         string networkId,
         string nickname,
         bool isBot = false,
-        MessengerServerSyncService? sync = null)
+        MessengerServerManager? messengerServers = null)
     {
         var id = ChatRepository.CanonicalPeerNetworkId(networkId);
         if (userId <= 0 || id.Length == 0)
@@ -34,15 +34,15 @@ internal static class BlacklistUi
             return false;
 
         await blacklist.AddAsync(userId, id, label).ConfigureAwait(true);
-        if (isBot && sync != null)
+        if (isBot && messengerServers != null)
         {
             try
             {
-                await sync.BlacklistBotAndClaimAsync(id).ConfigureAwait(true);
+                await BotHostClaims.ClaimServersHostingBotAsync(messengerServers, id).ConfigureAwait(true);
             }
             catch
             {
-                // Local block already applied; server fan-out is best-effort.
+                // Local block already applied; claims are best-effort.
             }
         }
 

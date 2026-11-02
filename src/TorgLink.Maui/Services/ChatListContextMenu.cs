@@ -26,7 +26,7 @@ internal static class ChatListContextMenu
         public required Page Host { get; init; }
         public required AuthService Auth { get; init; }
         public required PeerBlacklist Blacklist { get; init; }
-        public required MessengerServerSyncService Sync { get; init; }
+        public required MessengerServerManager MessengerServers { get; init; }
         public required ChatRepository Chats { get; init; }
         public required UserP2pRuntime P2p { get; init; }
         public Func<Task>? AfterChange { get; init; }
@@ -224,7 +224,7 @@ internal static class ChatListContextMenu
 
         await BlacklistUi.ConfirmAndBlockAsync(
             deps.Host, deps.Blacklist, u.Id, row.PeerNetworkIdShort, row.PeerNickname,
-            row.Chat.IsBot, deps.Sync).ConfigureAwait(true);
+            row.Chat.IsBot, deps.MessengerServers).ConfigureAwait(true);
         if (deps.AfterChange != null)
             await deps.AfterChange().ConfigureAwait(true);
     }
