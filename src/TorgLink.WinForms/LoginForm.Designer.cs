@@ -79,7 +79,7 @@ partial class LoginForm
         _import.Text = "Импорт профиля…";
         _exit.DialogResult = DialogResult.Cancel;
         _exit.Name = "_exit";
-        _exit.Text = "Выход";
+        _exit.Text = "Разлогиниться";
 
         _buttons.AutoSize = true;
         _buttons.Name = "_buttons";
