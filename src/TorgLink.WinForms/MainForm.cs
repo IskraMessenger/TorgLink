@@ -554,13 +554,18 @@ public sealed partial class MainForm : AppForm
                 var p = PeerQrService.BuildPayload(user, user.RsaPublicJson);
                 return (p, PeerQrService.EncodeQrPng(p));
             }).ConfigureAwait(true);
-            using var preview = new QrPreviewForm("Мой QR", png, payload.Id);
+            using var preview = new QrPreviewForm(
+                LocalizationUtils.GetStringByKey("network.my_qr"),
+                png,
+                payload.Id,
+                "network.my_qr");
             preview.ShowDialog(this);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "My QR");
-            MessageBox.Show(this, ex.Message, "Мой QR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, ex.Message, LocalizationUtils.GetStringByKey("network.my_qr"),
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
