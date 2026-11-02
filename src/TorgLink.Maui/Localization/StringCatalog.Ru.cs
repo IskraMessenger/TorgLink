@@ -89,6 +89,7 @@ internal static partial class StringCatalog
         ["blacklist.add"] = "В чёрный список",
         ["blacklist.add_title"] = "Чёрный список",
         ["blacklist.add_body"] = "Скрыть «{0}»: сообщения и приглашения будут приниматься, но не показываться, уведомлений не будет.",
+        ["blacklist.add_body_bot"] = "Заблокировать бота «{0}»: скрыть локально и отправить жалобу (claim) на серверы, где он представлен.",
         ["blacklist.add_hint"] = "В чёрный список",
         ["blacklist.unblock"] = "Убрать",
         ["blacklist.blocked"] = "Этот пользователь в чёрном списке.",

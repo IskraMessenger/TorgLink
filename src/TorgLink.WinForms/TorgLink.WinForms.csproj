@@ -36,10 +36,12 @@
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\BotHostClaims.cs" Link="BotHostClaims.cs" />
     <ProjectReference Include="..\TorgLink.Localization\TorgLink.Localization.csproj" />
     <ProjectReference Include="..\..\ShortP2P\src\Fx48\ShortP2P.Client.Fx48.csproj" />
     <ProjectReference Include="..\..\ShortP2P\src\Fx48\ShortP2P.Auth.Fx48.csproj" />
     <ProjectReference Include="..\..\ShortP2P\src\Fx48\ShortP2P.Crypto.Fx48.csproj" />
+    <ProjectReference Include="..\..\ShortP2P\src\Fx48\ShortP2P.TrustSystem.Fx48.csproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\logo_32.png" />

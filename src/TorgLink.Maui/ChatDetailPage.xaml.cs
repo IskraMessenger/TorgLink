@@ -87,7 +87,8 @@ public partial class ChatDetailPage : ContentPage
     private int _transportConnectGeneration;
 
     public ChatDetailPage(AuthService auth, ChatRepository repo, UserP2pRuntime p2p, ChatMediaOptions media,
-        P2pRoutingSettingsStore routingStore, MessengerServerManager messengerServers, PeerBlacklist blacklist,
+        P2pRoutingSettingsStore routingStore, MessengerServerManager messengerServers,
+        PeerBlacklist blacklist,
         ILogger<ChatDetailPage> logger)
     {
         InitializeComponent();
@@ -1596,6 +1597,7 @@ public partial class ChatDetailPage : ContentPage
             Host = this,
             Auth = _auth,
             Blacklist = _blacklist,
+            MessengerServers = _messengerServers,
             Chats = _repo,
             P2p = _p2p,
             AfterChange = RefreshSidebarAsync,
@@ -1926,7 +1928,8 @@ public partial class ChatDetailPage : ContentPage
             return;
 
         var blocked = await BlacklistUi.ConfirmAndBlockAsync(
-            this, _blacklist, user.Id, chat.PeerNetworkIdShort, chat.PeerNickname).ConfigureAwait(true);
+            this, _blacklist, user.Id, chat.PeerNetworkIdShort, chat.PeerNickname,
+            chat.IsBot, _messengerServers).ConfigureAwait(true);
         if (blocked && Navigation.NavigationStack.Count > 1)
             await Navigation.PopAsync().ConfigureAwait(true);
     }

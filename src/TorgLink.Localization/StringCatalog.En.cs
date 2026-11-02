@@ -93,6 +93,7 @@ public static partial class StringCatalog
         ["blacklist.add"] = "Block",
         ["blacklist.add_title"] = "Blacklist",
         ["blacklist.add_body"] = "Hide “{0}”: messages and invites will still be received but not shown, and there will be no notifications.",
+        ["blacklist.add_body_bot"] = "Block bot “{0}”: hide locally and file a trust claim about every messenger server where it is present.",
         ["blacklist.add_hint"] = "Add to blacklist",
         ["blacklist.unblock"] = "Unblock",
         ["blacklist.blocked"] = "This user is on the blacklist.",

@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\BotHostClaims.cs" Link="Services\BotHostClaims.cs" />
     <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Auth\ShortP2P.Auth.csproj" />
     <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Client\ShortP2P.Client.csproj" />
     <ProjectReference Include="..\..\ShortP2P\src\ShortP2P.Discovery\ShortP2P.Discovery.csproj" />

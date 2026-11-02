@@ -14,6 +14,7 @@ partial class ChatForm
     private System.Windows.Forms.Button _attachDocument;
     private System.Windows.Forms.Button _botCommands;
     private System.Windows.Forms.Button _deliveryPath;
+    private System.Windows.Forms.Button _blockPeer;
     private System.Windows.Forms.Button _send;
 
     protected override void Dispose(bool disposing)
@@ -40,6 +41,7 @@ partial class ChatForm
         this._attachImage = new System.Windows.Forms.Button();
         this._botCommands = new System.Windows.Forms.Button();
         this._deliveryPath = new System.Windows.Forms.Button();
+        this._blockPeer = new System.Windows.Forms.Button();
         this._send = new System.Windows.Forms.Button();
         this._input = new System.Windows.Forms.TextBox();
         ((System.ComponentModel.ISupportInitialize)(this._split)).BeginInit();
@@ -130,19 +132,21 @@ partial class ChatForm
         // 
         // tableLayoutPanel1
         // 
-        this.tableLayoutPanel1.ColumnCount = 6;
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66F));
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66F));
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66F));
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66F));
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66F));
-        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.7F));
+        this.tableLayoutPanel1.ColumnCount = 7;
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.28F));
+        this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 14.32F));
         this.tableLayoutPanel1.Controls.Add(this._attachVoice, 0, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachImage, 1, 0);
         this.tableLayoutPanel1.Controls.Add(this._attachDocument, 2, 0);
         this.tableLayoutPanel1.Controls.Add(this._botCommands, 3, 0);
         this.tableLayoutPanel1.Controls.Add(this._deliveryPath, 4, 0);
-        this.tableLayoutPanel1.Controls.Add(this._send, 5, 0);
+        this.tableLayoutPanel1.Controls.Add(this._blockPeer, 5, 0);
+        this.tableLayoutPanel1.Controls.Add(this._send, 6, 0);
         this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
         this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 177);
         this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
@@ -201,19 +205,29 @@ partial class ChatForm
         this._deliveryPath.Font = new System.Drawing.Font("Segoe UI", 9F);
         this._deliveryPath.Location = new System.Drawing.Point(422, 9);
         this._deliveryPath.Name = "_deliveryPath";
-        this._deliveryPath.Size = new System.Drawing.Size(98, 45);
+        this._deliveryPath.Size = new System.Drawing.Size(80, 45);
         this._deliveryPath.TabIndex = 6;
         this._deliveryPath.Text = "Путь: авто";
+        // 
+        // _blockPeer
+        // 
+        this._blockPeer.Dock = System.Windows.Forms.DockStyle.Fill;
+        this._blockPeer.Font = new System.Drawing.Font("Segoe UI Emoji", 11F);
+        this._blockPeer.Location = new System.Drawing.Point(508, 9);
+        this._blockPeer.Name = "_blockPeer";
+        this._blockPeer.Size = new System.Drawing.Size(80, 45);
+        this._blockPeer.TabIndex = 7;
+        this._blockPeer.Text = "🚫";
         // 
         // _send
         // 
         this._send.AutoSize = true;
         this._send.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
         this._send.Dock = System.Windows.Forms.DockStyle.Fill;
-        this._send.Location = new System.Drawing.Point(526, 9);
+        this._send.Location = new System.Drawing.Point(594, 9);
         this._send.Name = "_send";
-        this._send.Size = new System.Drawing.Size(101, 45);
-        this._send.TabIndex = 7;
+        this._send.Size = new System.Drawing.Size(80, 45);
+        this._send.TabIndex = 8;
         this._send.Text = "Отправить";
         // 
         // _input

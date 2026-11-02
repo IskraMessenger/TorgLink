@@ -31,7 +31,8 @@ public partial class ChatsPage : ContentPage
     private bool _profileHooksAttached;
 
     public ChatsPage(AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        MessengerServerManager messengerServers, PeerBlacklist blacklist, ILogger<ChatsPage> logger)
+        MessengerServerManager messengerServers, PeerBlacklist blacklist,
+        ILogger<ChatsPage> logger)
     {
         InitializeComponent();
         _auth = auth;
@@ -455,6 +456,7 @@ public partial class ChatsPage : ContentPage
         Host = this,
         Auth = _auth,
         Blacklist = _blacklist,
+        MessengerServers = _messengerServers,
         Chats = _chats,
         P2p = _p2p,
         AfterChange = RefreshAsync
@@ -492,8 +494,9 @@ public partial class ChatsPage : ContentPage
         if (chat == null || u == null)
             return;
 
-        await BlacklistUi.ConfirmAndBlockAsync(this, _blacklist, u.Id, chat.PeerNetworkIdShort, chat.PeerNickname)
-            .ConfigureAwait(true);
+        await BlacklistUi.ConfirmAndBlockAsync(
+                this, _blacklist, u.Id, chat.PeerNetworkIdShort, chat.PeerNickname,
+                chat.IsBot, _messengerServers).ConfigureAwait(true);
         await RefreshAsync().ConfigureAwait(true);
     }
 

@@ -92,6 +92,7 @@ public static partial class StringCatalog
         ["blacklist.add"] = "Bloquer",
         ["blacklist.add_title"] = "Liste noire",
         ["blacklist.add_body"] = "Masquer « {0} » : les messages et invitations seront reçus mais non affichés, sans notifications.",
+        ["blacklist.add_body_bot"] = "Bloquer le bot « {0} » : masquer localement et envoyer un claim concernant chaque serveur ou il est present.",
         ["blacklist.add_hint"] = "Ajouter à la liste noire",
         ["blacklist.unblock"] = "Débloquer",
         ["blacklist.blocked"] = "Cet utilisateur est sur la liste noire.",
