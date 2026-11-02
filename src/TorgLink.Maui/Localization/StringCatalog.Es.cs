@@ -128,7 +128,7 @@ internal static partial class StringCatalog
         ["settings.connection_test"] = "Prueba de conexión",
         ["settings.logs"] = "Registro",
         ["settings.about"] = "Acerca de",
-        ["settings.logout"] = "Salir",
+        ["settings.logout"] = "Cerrar sesión",
         ["settings.storage_mb"] = "Usado {0:0.0} MB",
         ["settings.storage_gb"] = "Usado {0:0.0} GB",
         ["settings.about_body"] = "Mensajero mesh.\nVersión 0.1\nAndroid 5.0 (API 21)+",
