@@ -45,7 +45,7 @@ public sealed partial class LoginForm : AppForm
         _login.Text = LocalizationUtils.GetStringByKey("login.sign_in");
         _register.Text = LocalizationUtils.GetStringByKey("register.header");
         _import.Text = LocalizationUtils.GetStringByKey("login.import_profile");
-        _exit.Text = LocalizationUtils.GetStringByKey("close");
+        _exit.Text = LocalizationUtils.GetStringByKey("settings.logout");
     }
 
     private async Task OnLoginAsync()

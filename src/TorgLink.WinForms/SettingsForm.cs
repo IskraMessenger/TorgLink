@@ -32,7 +32,6 @@ public sealed partial class SettingsForm : AppForm
     private readonly MessengerServerSyncService _sync = null!;
     private readonly P2pRoutingSettings _live = null!;
     private readonly P2pRoutingSettingsStore _store = null!;
-    private readonly string _appRoot = null!;
     private readonly ILogger<SettingsForm> _logger = null!;
 
     private byte[]? _avatarBytes;
@@ -65,9 +64,6 @@ public sealed partial class SettingsForm : AppForm
         _live = live;
         _store = store;
         _logger = logger;
-        _appRoot = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TorgLink", "WinForms");
 
         BuildLanguageTab();
 
@@ -200,7 +196,6 @@ public sealed partial class SettingsForm : AppForm
     {
         UpdateProfileSummary();
         _udpPort.Text = _auth.CurrentUser?.DataUdpPort.ToString() ?? "—";
-        _storage.Text = FormatStorage(_appRoot);
         LoadProfileIntoUiBestEffort();
 
         var s = await _store.LoadAsync().ConfigureAwait(true);
@@ -237,15 +232,10 @@ public sealed partial class SettingsForm : AppForm
         SetTabPageText(_tabProfile, LocalizationUtils.GetStringByKey("profile.title"));
         SetTabPageText(_tabNetwork, LocalizationUtils.GetStringByKey("tab.network"));
         SetTabPageText(_tabRouting, LocalizationUtils.GetStringByKey("routing.title"));
-        SetTabPageText(_tabStorage, LocalizationUtils.GetStringByKey("settings.storage"));
 
         _loadAvatar.Text = LocalizationUtils.GetStringByKey("profile.choose_avatar");
         _clearAvatar.Text = LocalizationUtils.GetStringByKey("profile.clear_avatar");
         _aboutLabel.Text = LocalizationUtils.GetStringByKeyWithFormat("profile.about_ph", PeerProfileLimits.MaxAboutMeChars);
-        _hint.Text = LocalizationUtils.GetStringByKeyWithFormat(
-            "profile.avatar_hint",
-            PeerProfileLimits.MaxAvatarBytes / 1024,
-            AvatarDimension);
 
         _lblUdpCaption.Text = LocalizationUtils.GetStringByKey("settings.udp");
         _lan.Text = LocalizationUtils.GetStringByKey("settings.lan");
@@ -625,24 +615,6 @@ public sealed partial class SettingsForm : AppForm
 
     private static decimal Clamp(int value, int min, int max) =>
         value < min ? min : value > max ? max : value;
-
-    private static string FormatStorage(string dir)
-    {
-        try
-        {
-            if (!Directory.Exists(dir))
-                return "—";
-            long bytes = 0;
-            foreach (var f in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
-                bytes += new FileInfo(f).Length;
-            var mb = bytes / (1024.0 * 1024.0);
-            return mb >= 1024 ? $"{mb / 1024:0.00} ГБ  ({dir})" : $"{mb:0.00} МБ  ({dir})";
-        }
-        catch
-        {
-            return "—";
-        }
-    }
 
     private static string TrimAbout(string text, int max)
     {

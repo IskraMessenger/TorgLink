@@ -132,7 +132,7 @@ internal static partial class StringCatalog
         ["settings.connection_test"] = "Тест соединения",
         ["settings.logs"] = "Журнал",
         ["settings.about"] = "О приложении",
-        ["settings.logout"] = "Выйти",
+        ["settings.logout"] = "Разлогиниться",
         ["settings.storage_mb"] = "Использовано {0:0.0} МБ",
         ["settings.storage_gb"] = "Использовано {0:0.0} ГБ",
         ["settings.about_body"] = "Mesh-мессенджер.\nВерсия 0.1\nAndroid 5.0 (API 21)+",
