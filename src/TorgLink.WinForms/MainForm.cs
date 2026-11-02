@@ -453,6 +453,7 @@ public sealed partial class MainForm : AppForm
             _chats,
             _services.GetRequiredService<ChatSessionCache>(),
             _services.GetRequiredService<MessengerServerSyncService>(),
+            _services.GetRequiredService<PeerBlacklist>(),
             _services.GetRequiredService<ChatMediaOptions>(),
             _services.GetRequiredService<P2pRoutingSettings>(),
             chat,

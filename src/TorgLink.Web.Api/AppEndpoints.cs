@@ -242,7 +242,8 @@ internal static class AppEndpoints
                 preview = ChatSessionHelper.Preview(last),
                 time = last == null ? "" : ChatSessionHelper.TimeLabel(last.SentUtcTicks),
                 online = p2p.LocalScan.IsPeerSeenRecentlyOnLan(c.PeerNetworkIdShort),
-                delivery = ds
+                delivery = ds,
+                isBot = c.IsBot
             });
         }
 
@@ -274,7 +275,12 @@ internal static class AppEndpoints
         return Results.Ok();
     }
 
-    private static async Task<IResult> BlockChat(int id, AuthService auth, ChatRepository chats, PeerBlacklist blacklist)
+    private static async Task<IResult> BlockChat(
+        int id,
+        AuthService auth,
+        ChatRepository chats,
+        PeerBlacklist blacklist,
+        MessengerServerSyncService sync)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -284,6 +290,18 @@ internal static class AppEndpoints
         var u = auth.CurrentUser!;
         await blacklist.EnsureLoadedAsync(u.Id).ConfigureAwait(false);
         await blacklist.AddAsync(u.Id, chat.PeerNetworkIdShort, chat.PeerNickname).ConfigureAwait(false);
+        if (chat.IsBot)
+        {
+            try
+            {
+                await sync.BlacklistBotAndClaimAsync(chat.PeerNetworkIdShort).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Local block already applied; server fan-out is best-effort.
+            }
+        }
+
         return Results.Ok();
     }
 

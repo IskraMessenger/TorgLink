@@ -92,6 +92,7 @@ public static partial class StringCatalog
         ["blacklist.add"] = "加入黑名单",
         ["blacklist.add_title"] = "黑名单",
         ["blacklist.add_body"] = "隐藏“{0}”：仍会接收消息和邀请，但不会显示，也不会通知。",
+        ["blacklist.add_body_bot"] = "屏蔽机器人“{0}”：本地隐藏，在其出现的每个消息服务器加入黑名单，并对这些服务器发送信任投诉（claim）。",
         ["blacklist.add_hint"] = "加入黑名单",
         ["blacklist.unblock"] = "移除",
         ["blacklist.blocked"] = "该用户在黑名单中。",

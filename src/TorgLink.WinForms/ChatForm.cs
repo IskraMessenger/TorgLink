@@ -18,6 +18,7 @@ public sealed partial class ChatForm : AppForm
     private readonly ChatRepository _chats = null!;
     private readonly ChatSessionCache _sessions = null!;
     private readonly MessengerServerSyncService _sync = null!;
+    private readonly PeerBlacklist _blacklist = null!;
     private readonly ChatMediaOptions _media = null!;
     private readonly P2pRoutingSettings _routing = null!;
     private ChatEntity _chat = null!;
@@ -66,6 +67,7 @@ public sealed partial class ChatForm : AppForm
         ChatRepository chats,
         ChatSessionCache sessions,
         MessengerServerSyncService sync,
+        PeerBlacklist blacklist,
         ChatMediaOptions media,
         P2pRoutingSettings routing,
         ChatEntity chat,
@@ -76,6 +78,7 @@ public sealed partial class ChatForm : AppForm
         _chats = chats;
         _sessions = sessions;
         _sync = sync;
+        _blacklist = blacklist;
         _media = media;
         _routing = routing;
         _chat = chat;
@@ -95,6 +98,7 @@ public sealed partial class ChatForm : AppForm
         RefreshBotCommandsButton();
         _deliveryPath.Click += (_, _) => ShowDeliveryPathMenu();
         _botCommands.Click += async (_, _) => await ShowBotCommandsAsync().ConfigureAwait(true);
+        _blockPeer.Click += async (_, _) => await BlockPeerAsync().ConfigureAwait(true);
 
         _sidebar.DrawItem += OnSidebarDrawItem;
         _sidebar.SelectedIndexChanged += OnSidebarSelectedIndexChanged;
@@ -309,11 +313,56 @@ public sealed partial class ChatForm : AppForm
         _buttonTooltips.SetToolTip(_attachDocument, LocalizationUtils.GetStringByKey("chat.doc_picker"));
         _buttonTooltips.SetToolTip(_deliveryPath, LocalizationUtils.GetStringByKey("chat.path_hint"));
         _buttonTooltips.SetToolTip(_send, LocalizationUtils.GetStringByKey("chat.send"));
+        _buttonTooltips.SetToolTip(_blockPeer, LocalizationUtils.GetStringByKey("blacklist.add_hint"));
         _botCommands.Text = LocalizationUtils.GetStringByKey("chat.commands");
         _buttonTooltips.SetToolTip(_botCommands, LocalizationUtils.GetStringByKey("chat.commands"));
         RefreshBotCommandsButton();
         RefreshDeliveryPathButton();
         Text = FormatTitle(_chat);
+    }
+
+    private async Task BlockPeerAsync()
+    {
+        var user = _auth.CurrentUser;
+        if (user == null)
+            return;
+
+        var id = ChatRepository.CanonicalPeerNetworkId(_chat.PeerNetworkIdShort);
+        if (id.Length == 0)
+            return;
+
+        await _blacklist.EnsureLoadedAsync(user.Id).ConfigureAwait(true);
+        if (_blacklist.IsBlocked(user.Id, id))
+        {
+            Close();
+            return;
+        }
+
+        var label = string.IsNullOrWhiteSpace(_chat.PeerNickname) ? id : _chat.PeerNickname.Trim();
+        var bodyKey = _chat.IsBot ? "blacklist.add_body_bot" : "blacklist.add_body";
+        var confirm = MessageBox.Show(
+            this,
+            LocalizationUtils.GetStringByKeyWithFormat(bodyKey, label),
+            LocalizationUtils.GetStringByKey("blacklist.add_title"),
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Warning);
+        if (confirm != DialogResult.OK)
+            return;
+
+        await _blacklist.AddAsync(user.Id, id, label).ConfigureAwait(true);
+        if (_chat.IsBot)
+        {
+            try
+            {
+                await _sync.BlacklistBotAndClaimAsync(id).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Bot server blacklist/claim failed for {BotId}", id);
+            }
+        }
+
+        Close();
     }
 
     private void RefreshBotCommandsButton()
