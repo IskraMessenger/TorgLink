@@ -4,10 +4,10 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using ShortP2P.Auth;
 using ShortP2P.Client.Services;
+using TorgLink.Localization;
 #if WINDOWS
 using Windows.Data.Xml.Dom;
 using Windows.UI.Notifications;
-using TorgLink.Localization;
 #endif
 
 namespace TorgLink.Maui;
