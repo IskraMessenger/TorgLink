@@ -96,6 +96,12 @@
         <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
         <!-- Шестерёнка шапки показывается 44x44 — растрируем в этом размере, чтобы не была мыльной -->
         <MauiImage Update="Resources\Images\tab_settings.svg" Resize="True" BaseSize="44,44" />
+        <!-- Иконки вложений в bubble ~0.9 высоты — растрируем крупнее, чтобы не мылились -->
+        <MauiImage Update="Resources\Images\attach_video.svg" Resize="True" BaseSize="96,96" />
+        <MauiImage Update="Resources\Images\attach_image.svg" Resize="True" BaseSize="96,96" />
+        <MauiImage Update="Resources\Images\attach_audio_play.svg" Resize="True" BaseSize="96,96" />
+        <MauiImage Update="Resources\Images\attach_audio_download.svg" Resize="True" BaseSize="96,96" />
+        <MauiImage Update="Resources\Images\attach_file.svg" Resize="True" BaseSize="96,96" />
         <MauiFont Include="Resources\Fonts\*" />
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>

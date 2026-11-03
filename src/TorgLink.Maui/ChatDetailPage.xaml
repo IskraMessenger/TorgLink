@@ -127,18 +127,31 @@
                             <Border Grid.Column="{Binding BubbleColumn}" MaximumWidthRequest="280" Padding="10,8"
                                     StrokeThickness="0" StrokeShape="RoundRectangle 14"
                                     BackgroundColor="{Binding BubbleColor}">
-                                <VerticalStackLayout Spacing="4">
-                                    <Label Text="{Binding TextBody}" TextColor="{Binding MessageColor}"
-                                           LineBreakMode="WordWrap" IsVisible="{Binding ShowTextBody}" />
-                                    <Label Text="{Binding FileBodyText}" TextColor="{Binding MessageColor}"
-                                           LineBreakMode="WordWrap" IsVisible="{Binding IsFile}" />
-                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="End">
-                                        <Label Text="{Binding TimeLabel}" FontSize="10"
-                                               TextColor="{DynamicResource MutedText}" />
-                                        <Label Text="{Binding DeliveryGlyph}" TextColor="{Binding DeliveryGlyphColor}"
-                                               FontSize="11" IsVisible="{Binding ShowDelivery}" />
-                                    </HorizontalStackLayout>
-                                </VerticalStackLayout>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <!-- Fixed size: CollectionView recycling made per-bubble SizeChanged inconsistent -->
+                                    <Image Source="{Binding AttachmentIconSource}"
+                                           Aspect="AspectFit"
+                                           VerticalOptions="Center"
+                                           HorizontalOptions="Center"
+                                           WidthRequest="48" HeightRequest="48"
+                                           IsVisible="{Binding IsFile}" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding TextBody}" TextColor="{Binding MessageColor}"
+                                               LineBreakMode="WordWrap" IsVisible="{Binding ShowTextBody}" />
+                                        <VerticalStackLayout Spacing="2" IsVisible="{Binding IsFile}">
+                                            <Label Text="{Binding FileTitleText}" TextColor="{Binding MessageColor}"
+                                                   LineBreakMode="WordWrap" />
+                                            <Label Text="{Binding FileMetaText}" TextColor="{Binding MessageColor}"
+                                                   LineBreakMode="WordWrap" />
+                                        </VerticalStackLayout>
+                                        <HorizontalStackLayout Spacing="6" HorizontalOptions="End">
+                                            <Label Text="{Binding TimeLabel}" FontSize="10"
+                                                   TextColor="{DynamicResource MutedText}" />
+                                            <Label Text="{Binding DeliveryGlyph}" TextColor="{Binding DeliveryGlyphColor}"
+                                                   FontSize="11" IsVisible="{Binding ShowDelivery}" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Grid>
                             </Border>
                         </Grid>
                     </DataTemplate>
