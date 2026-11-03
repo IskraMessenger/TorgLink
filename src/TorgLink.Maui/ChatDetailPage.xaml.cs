@@ -253,6 +253,7 @@ public partial class ChatDetailPage : ContentPage
                 _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
                 _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
                 _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+                _p2pSession.ActiveChannelChanged -= OnActiveChannelChanged;
                 _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
             }
 
@@ -266,6 +267,8 @@ public partial class ChatDetailPage : ContentPage
                 _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
                 _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
                 _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+                _p2pSession.ActiveChannelChanged -= OnActiveChannelChanged;
+                _p2pSession.ActiveChannelChanged += OnActiveChannelChanged;
                 _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
                 _p2pSession.HandshakeStatusChanged += OnHandshakeStatusChanged;
                 RefreshSessionStatusLabel();
@@ -343,6 +346,11 @@ public partial class ChatDetailPage : ContentPage
             await session.StartAsync().ConfigureAwait(false);
             _p2p.MarkChatSessionStarted(chat.Id);
             AppLog.PeerConnected("chat-session", chat.PeerNetworkIdShort);
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (_chat != null && _chat.Id == chat.Id)
+                    RefreshSafetyLabel(_chat);
+            }).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -435,6 +443,8 @@ public partial class ChatDetailPage : ContentPage
             _p2pSession.TransferStateChanged += OnP2PTransferStateChanged;
             _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
             _p2pSession.DeliveryPathChanged += OnDeliveryPathChanged;
+            _p2pSession.ActiveChannelChanged -= OnActiveChannelChanged;
+            _p2pSession.ActiveChannelChanged += OnActiveChannelChanged;
             _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
             _p2pSession.HandshakeStatusChanged += OnHandshakeStatusChanged;
             RefreshSessionStatusLabel();
@@ -464,6 +474,7 @@ public partial class ChatDetailPage : ContentPage
             _p2pSession.MessagesChanged -= OnP2PMessagesChanged;
             _p2pSession.TransferStateChanged -= OnP2PTransferStateChanged;
             _p2pSession.DeliveryPathChanged -= OnDeliveryPathChanged;
+            _p2pSession.ActiveChannelChanged -= OnActiveChannelChanged;
             _p2pSession.HandshakeStatusChanged -= OnHandshakeStatusChanged;
         }
 
@@ -521,7 +532,7 @@ public partial class ChatDetailPage : ContentPage
 
     private void RefreshSafetyLabel(ChatEntity chat)
     {
-        SafetyNumberLabel.Text = PeerSafetyUi.ChatPanel(_auth, chat);
+        SafetyNumberLabel.Text = PeerSafetyUi.ChatPanel(_auth, chat, _p2pSession);
     }
 
     private static void SetControlHint(View view, string text)
@@ -1864,7 +1875,21 @@ public partial class ChatDetailPage : ContentPage
 
     private void OnDeliveryPathChanged(object? sender, EventArgs e)
     {
-        MainThread.BeginInvokeOnMainThread(RefreshDeliveryPathButton);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            RefreshDeliveryPathButton();
+            if (_chat != null)
+                RefreshSafetyLabel(_chat);
+        });
+    }
+
+    private void OnActiveChannelChanged(object? sender, EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_chat != null)
+                RefreshSafetyLabel(_chat);
+        });
     }
 
     private void OnHandshakeStatusChanged(object? sender, EventArgs e)
