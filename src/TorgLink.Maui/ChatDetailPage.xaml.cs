@@ -918,7 +918,9 @@ public partial class ChatDetailPage : ContentPage
         a.MessageId == b.MessageId &&
         a.DeliveryStatus == b.DeliveryStatus &&
         a.TextBody == b.TextBody &&
-        a.FileBodyText == b.FileBodyText &&
+        a.AttachmentIconSource == b.AttachmentIconSource &&
+        a.FileTitleText == b.FileTitleText &&
+        a.FileMetaText == b.FileMetaText &&
         a.IsImage == b.IsImage &&
         a.IsFile == b.IsFile &&
         a.IsVoice == b.IsVoice &&
@@ -1031,46 +1033,46 @@ public partial class ChatDetailPage : ContentPage
         var isVideo = IsVideoAttachment(m);
         var voiceReady = isVoice && IsVoiceLocallyAvailable(m, isTransferOffer);
         var duration = TryFormatLocalMediaDuration(m);
-        var nameWithDuration = duration == null ? name : $"{name} · {duration}";
-        
-        string fileBody;
-        string mediaIcon;
-        
+        var title = duration == null ? name : $"{name} · {duration}";
+        var sizeLabel = LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb);
+
+        string iconSource;
+        string meta;
         if (isVoice)
         {
-            // Audio: show play icon if ready, download icon if not
-            mediaIcon = voiceReady ? "▶️" : "⬇️";
+            // MauiImage (svg→png): reference like icon_bluetooth.png
+            iconSource = voiceReady ? "attach_audio_play.png" : "attach_audio_download.png";
             var hint = voiceReady
                 ? LocalizationUtils.GetStringByKey("chat.state.tap_play")
                 : (stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_download"));
-            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {hint}";
+            meta = $"{sizeLabel} · {hint}";
         }
         else if (isVideo)
         {
-            // Video: show video camera icon
-            mediaIcon = "🎬";
+            iconSource = "attach_video.png";
             var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
-            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
+            meta = $"{sizeLabel} · {action}";
         }
         else if (isImage)
         {
-            // Image: show picture icon
-            mediaIcon = "🖼️";
+            iconSource = "attach_image.png";
             var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
-            fileBody = $"{mediaIcon} {nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
+            meta = $"{sizeLabel} · {action}";
         }
         else
         {
-            // Other files
+            iconSource = "attach_file.png";
             var action = stateText ?? LocalizationUtils.GetStringByKey("chat.state.tap_row");
-            fileBody = $"{nameWithDuration} · {LocalizationUtils.GetStringByKeyWithFormat("chat.kb", kb)} · {action}";
+            meta = $"{sizeLabel} · {action}";
         }
 
         return new MessageRowVm
         {
             CaptionLine = AttachmentKindCaption(m),
             TextBody = "",
-            FileBodyText = fileBody,
+            AttachmentIconSource = iconSource,
+            FileTitleText = title,
+            FileMetaText = meta,
             ShowTextBody = false,
             IsImage = isImage,
             IsFile = true,
