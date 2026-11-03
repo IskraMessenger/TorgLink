@@ -23,7 +23,7 @@ internal static class PeerSafetyUi
         }
     }
 
-    public static string ChatPanel(AuthService auth, ChatEntity chat)
+    public static string ChatPanel(AuthService auth, ChatEntity chat, ChatP2PSession? session = null)
     {
         var user = auth.CurrentUser;
         if (user == null)
@@ -33,7 +33,7 @@ internal static class PeerSafetyUi
         {
             var fingerprints = PeerSafetyDisplay.FormatFingerprints(
                 user.Nickname, auth.GetCurrentPublicKey(), chat.PeerNickname, chat.PeerRsaPublicJson);
-            var channel = LocalizedChannel(chat);
+            var channel = LocalizedChannel(chat, session);
             return channel.Length == 0
                 ? fingerprints
                 : fingerprints + Environment.NewLine + LocalizationUtils.GetStringByKeyWithFormat("safety.channel", channel);
@@ -44,8 +44,16 @@ internal static class PeerSafetyUi
         }
     }
 
-    public static string LocalizedChannel(ChatEntity chat)
+    public static string LocalizedChannel(ChatEntity chat, ChatP2PSession? session = null)
     {
+        if (session != null && session.IsCommunicatingViaMessengerServer)
+        {
+            var endpoint = PeerSafetyDisplay.FormatServerEndpoint(session.ActiveMessengerServerBaseUrl ?? "");
+            return endpoint.Length == 0
+                ? LocalizationUtils.GetStringByKey("safety.ch_server")
+                : LocalizationUtils.GetStringByKeyWithFormat("safety.ch_server_ep", endpoint);
+        }
+
         var kind = (chat.PeerKeySourceKind ?? "").Trim();
         if (kind.Length == 0)
             return "";
