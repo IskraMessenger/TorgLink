@@ -15,6 +15,7 @@ using ShortP2P.Discovery;
 using ShortP2P.Transport;
 using ShortP2P.Transport.Abstractions;
 using ShortP2P.TrustSystem;
+using TorgLink.LoRa;
 
 namespace TorgLink.Web.Api;
 
@@ -70,6 +71,10 @@ internal static class AppEndpoints
 
         api.MapGet("/settings", GetSettings);
         api.MapPost("/settings", SaveSettings);
+        api.MapGet("/lora", GetLoRaSettings);
+        api.MapPost("/lora", SaveLoRaSettings);
+        api.MapGet("/lora/peers", ListLoRaPeers);
+        api.MapGet("/lora/jurisdictions", ListLoRaJurisdictions);
         api.MapGet("/routing", GetRouting);
         api.MapPost("/routing", SaveRouting);
 
@@ -123,7 +128,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> Login(LoginBody body, AuthService auth, UserP2pRuntime p2p,
-        ChatRepository chats, ILoggerFactory logs, HttpContext http)
+        ChatRepository chats, MeshtasticTransportHost lora, ILoggerFactory logs, HttpContext http)
     {
         var (ok, err) = await auth.LoginAsync(body.Nickname ?? "", body.Password ?? "").ConfigureAwait(false);
         if (!ok)
@@ -132,7 +137,7 @@ internal static class AppEndpoints
         await SignInAsync(http, user.Id, user.Nickname).ConfigureAwait(false);
         try
         {
-            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Login"))
+            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Login"), lora)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -144,7 +149,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> Register(LoginBody body, AuthService auth, UserP2pRuntime p2p,
-        ChatRepository chats, ILoggerFactory logs, HttpContext http)
+        ChatRepository chats, MeshtasticTransportHost lora, ILoggerFactory logs, HttpContext http)
     {
         if (!UserPasswordPolicy.TryValidate(body.Password, out var policyError))
             return Results.BadRequest(new { error = UserPasswordPolicy.Describe(policyError!.Value) });
@@ -155,7 +160,7 @@ internal static class AppEndpoints
         await SignInAsync(http, user.Id, user.Nickname).ConfigureAwait(false);
         try
         {
-            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Register"))
+            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Register"), lora)
                 .ConfigureAwait(false);
         }
         catch
@@ -166,11 +171,21 @@ internal static class AppEndpoints
         return Results.Json(UserDto(user, p2p));
     }
 
-    private static async Task<IResult> Logout(AuthService auth, UserP2pRuntime p2p, HttpContext http)
+    private static async Task<IResult> Logout(AuthService auth, UserP2pRuntime p2p, MeshtasticTransportHost lora,
+        HttpContext http)
     {
         try
         {
             await p2p.StopAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
+            await lora.StopAsync().ConfigureAwait(false);
         }
         catch
         {
@@ -201,7 +216,7 @@ internal static class AppEndpoints
     };
 
     private static async Task<IResult> ListChats(AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        PeerBlacklist blacklist, ILoggerFactory logs)
+        PeerBlacklist blacklist, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -213,7 +228,7 @@ internal static class AppEndpoints
         {
             try
             {
-                await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, chatsLog)
+                await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, chatsLog, lora)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -308,7 +323,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> GetChat(int id, AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        PeerBlacklist blacklist, ILoggerFactory logs)
+        PeerBlacklist blacklist, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -320,7 +335,7 @@ internal static class AppEndpoints
         if (blacklist.IsBlocked(u.Id, chat.PeerNetworkIdShort))
             return Results.Json(new { error = "blacklist.blocked" }, statusCode: 403);
         // Open chat UI immediately; transport/handshake continues in the background.
-        ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logs.CreateLogger("Chat"));
+        ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logs.CreateLogger("Chat"), lora);
 
         string safety;
         try
@@ -441,7 +456,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> SendText(int id, TextBody body, AuthService auth, ChatRepository chats,
-        UserP2pRuntime p2p, ILoggerFactory logs)
+        UserP2pRuntime p2p, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -455,7 +470,7 @@ internal static class AppEndpoints
             var session = ChatSessionHelper.GetSessionOrNull(p2p, auth, chats, chat);
             if (session == null)
                 return Results.Unauthorized();
-            ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logger);
+            ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logger, lora);
             await session.SendTextAsync(body.Text ?? "").ConfigureAwait(false);
             return Results.Ok();
         }
@@ -471,7 +486,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> SendFile(int id, IFormFile file, AuthService auth, ChatRepository chats,
-        UserP2pRuntime p2p, ILoggerFactory logs)
+        UserP2pRuntime p2p, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -480,6 +495,8 @@ internal static class AppEndpoints
             return Results.NotFound();
         var mime = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
         var limit = MediaFileLimits.LimitFor(p2p.Settings.TrafficQuality, mime);
+        if (lora.IsRunning)
+            limit = Math.Min(limit, MeshtasticTransportHost.MaxBinaryBytes);
         if (file.Length > limit)
             return Results.BadRequest(new { error = $"File is larger than {FormatByteLimit(limit)}." });
 
@@ -495,7 +512,7 @@ internal static class AppEndpoints
             var session = ChatSessionHelper.GetSessionOrNull(p2p, auth, chats, chat);
             if (session == null)
                 return Results.Unauthorized();
-            ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logger);
+            ChatSessionHelper.BeginEnsureSession(p2p, auth, chats, chat, logger, lora);
             if (mime.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                 await session.SendImageAsync(bytes, mime).ConfigureAwait(false);
             else
@@ -526,7 +543,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> RequestDownload(int id, int messageId, AuthService auth, ChatRepository chats,
-        UserP2pRuntime p2p, ILoggerFactory logs)
+        UserP2pRuntime p2p, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -534,7 +551,8 @@ internal static class AppEndpoints
         if (chat == null)
             return Results.NotFound();
         var logger = logs.CreateLogger("Download");
-        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger).ConfigureAwait(false);
+        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger, lora)
+            .ConfigureAwait(false);
         if (session == null)
             return Results.Unauthorized();
         await session.RequestBinaryDownloadAsync(messageId).ConfigureAwait(false);
@@ -542,7 +560,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> RetryMessage(int id, int messageId, AuthService auth, ChatRepository chats,
-        UserP2pRuntime p2p, ILoggerFactory logs)
+        UserP2pRuntime p2p, MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -550,7 +568,8 @@ internal static class AppEndpoints
         if (chat == null)
             return Results.NotFound();
         var logger = logs.CreateLogger("Retry");
-        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger).ConfigureAwait(false);
+        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger, lora)
+            .ConfigureAwait(false);
         if (session == null)
             return Results.Unauthorized();
         await session.RetryFailedMessageAsync(messageId).ConfigureAwait(false);
@@ -558,7 +577,7 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> ClearChat(int id, AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        ILoggerFactory logs)
+        MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
@@ -566,7 +585,8 @@ internal static class AppEndpoints
         if (chat == null)
             return Results.NotFound();
         var logger = logs.CreateLogger("Clear");
-        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger).ConfigureAwait(false);
+        var session = await ChatSessionHelper.EnsureSessionAsync(p2p, auth, chats, chat, logger, lora)
+            .ConfigureAwait(false);
         if (session != null)
             await session.ClearMessagesAsync().ConfigureAwait(false);
         else
@@ -687,14 +707,14 @@ internal static class AppEndpoints
     }
 
     private static async Task<IResult> ListContacts(AuthService auth, ChatRepository chats, UserP2pRuntime p2p,
-        ILoggerFactory logs)
+        MeshtasticTransportHost lora, ILoggerFactory logs)
     {
         if (NeedUser(auth) is { } deny)
             return deny;
         var u = auth.CurrentUser!;
         try
         {
-            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Contacts"))
+            await ChatSessionHelper.EnsureConnectivityAsync(p2p, auth, chats, logs.CreateLogger("Contacts"), lora)
                 .ConfigureAwait(false);
             await p2p.LocalScan.TriggerScanAsync().ConfigureAwait(false);
         }
@@ -998,6 +1018,89 @@ internal static class AppEndpoints
         return Results.Ok();
     }
 
+    private static async Task<IResult> GetLoRaSettings(AuthService auth, MeshtasticTransportHost lora)
+    {
+        if (NeedUser(auth) is { } deny)
+            return deny;
+        var s = await lora.LoadSettingsAsync().ConfigureAwait(false);
+        return Results.Json(new
+        {
+            s.Enabled,
+            s.ComPort,
+            s.BaudRate,
+            s.JurisdictionCode,
+            running = lora.IsRunning,
+            maxBinaryBytes = MeshtasticTransportHost.MaxBinaryBytes
+        });
+    }
+
+    private static async Task<IResult> SaveLoRaSettings(LoRaBody body, AuthService auth, UserP2pRuntime p2p,
+        MeshtasticTransportHost lora, ILoggerFactory logs)
+    {
+        if (NeedUser(auth) is { } deny)
+            return deny;
+        var settings = new LoRaTransportSettings
+        {
+            Enabled = body.Enabled,
+            ComPort = body.ComPort?.Trim() ?? "",
+            BaudRate = body.BaudRate > 0 ? body.BaudRate : 115200,
+            JurisdictionCode = string.IsNullOrWhiteSpace(body.JurisdictionCode)
+                ? "UNSET"
+                : body.JurisdictionCode.Trim()
+        };
+        await lora.SaveSettingsAsync(settings).ConfigureAwait(false);
+        var user = auth.CurrentUser;
+        var logger = logs.CreateLogger("LoRa");
+        if (user != null && settings.Enabled)
+        {
+            try
+            {
+                await LoRaBootstrap.EnsureRunningAsync(lora, p2p, user, logger).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "LoRa apply failed");
+                return Results.BadRequest(new { error = ex.Message, running = lora.IsRunning });
+            }
+        }
+        else
+        {
+            await lora.StopAsync().ConfigureAwait(false);
+        }
+
+        return Results.Json(new { ok = true, running = lora.IsRunning });
+    }
+
+    private static IResult ListLoRaPeers(AuthService auth, MeshtasticTransportHost lora)
+    {
+        if (NeedUser(auth) is { } deny)
+            return deny;
+        var rows = lora.ListPeers().Select(p => new
+        {
+            p.NetworkIdShort,
+            p.MeshIdHex,
+            p.Subject,
+            p.IsActive,
+            p.Confirmed,
+            lastSeenUtc = p.LastSeenUtc
+        });
+        return Results.Json(rows);
+    }
+
+    private static IResult ListLoRaJurisdictions()
+    {
+        return Results.Json(ShortP2P.LoRa.Jurisdiction.JurisdictionCatalog.Regions
+            .Select(r => new
+            {
+                r.Code,
+                r.FrequencyMinMHz,
+                r.FrequencyMaxMHz,
+                r.DutyCycleMaxPercent,
+                r.PowerMaxDbm,
+                r.IsUnset
+            }));
+    }
+
     private static async Task<IResult> GetRouting(P2pRoutingSettingsStore store)
     {
         var s = await store.LoadAsync().ConfigureAwait(false);
@@ -1136,6 +1239,7 @@ internal static class AppEndpoints
     private sealed record ServerUrlBody(string? BaseUrl);
     private sealed record ActiveBody(bool Active);
     private sealed record SettingsBody(bool? Bluetooth, bool? Lan, bool? Routing, string? TrafficQuality);
+    private sealed record LoRaBody(bool Enabled, string? ComPort, int BaudRate, string? JurisdictionCode);
     private sealed record RoutingBody(
         int MaxSearchHops,
         int SendFailureSearchAttempts,

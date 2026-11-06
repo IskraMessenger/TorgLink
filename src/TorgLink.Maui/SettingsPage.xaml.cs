@@ -8,7 +8,9 @@ using ShortP2P.Client.ProfileBackup;
 using ShortP2P.Client.Routing;
 using ShortP2P.Client.Services;
 using ShortP2P.Discovery;
+using ShortP2P.LoRa.Jurisdiction;
 using TorgLink.Localization;
+using TorgLink.LoRa;
 
 namespace TorgLink.Maui;
 
@@ -21,11 +23,12 @@ public partial class SettingsPage : ContentPage
     private readonly P2pRoutingSettingsStore _store;
     private readonly DatabaseProviderSettings _databaseSettings;
     private readonly ProfileBackupService _profileBackup;
+    private readonly MeshtasticTransportHost _lora;
     private bool _suppressToggle;
 
     public SettingsPage(AuthService auth, UserP2pRuntime p2p, P2pRoutingSettingsStore store,
         IBluetoothTransportProvider bluetoothTransport, DatabaseProviderSettings databaseSettings, ILogger<SettingsPage> logger,
-        ProfileBackupService profileBackup)
+        ProfileBackupService profileBackup, MeshtasticTransportHost lora)
     {
         InitializeComponent();
         _auth = auth;
@@ -35,6 +38,7 @@ public partial class SettingsPage : ContentPage
         _databaseSettings = databaseSettings;
         _logger = logger;
         _profileBackup = profileBackup;
+        _lora = lora;
         LanguageService.Changed += OnLanguageChanged;
         ProfileRow.GestureRecognizers.Add(new TapGestureRecognizer
         {
@@ -91,11 +95,62 @@ public partial class SettingsPage : ContentPage
 
         // Initialize database provider picker
         InitializeDatabaseProviderPicker();
+        await LoadLoRaSettingsAsync().ConfigureAwait(true);
 
         RebuildLanguageTiles();
         RebuildThemeChips();
         RebuildEconomyChips();
         await Task.CompletedTask.ConfigureAwait(true);
+    }
+
+    private async Task LoadLoRaSettingsAsync()
+    {
+        var s = await _lora.LoadSettingsAsync().ConfigureAwait(true);
+        _suppressToggle = true;
+        LoRaSwitch.IsToggled = s.Enabled;
+        LoRaComPortEntry.Text = s.ComPort;
+        var codes = JurisdictionCatalog.Regions.Select(r => r.Code).ToList();
+        LoRaJurisdictionPicker.ItemsSource = codes;
+        var idx = codes.FindIndex(c => string.Equals(c, s.JurisdictionCode, StringComparison.OrdinalIgnoreCase));
+        LoRaJurisdictionPicker.SelectedIndex = idx >= 0 ? idx : 0;
+        _suppressToggle = false;
+        LoRaStatusLabel.Text = _lora.IsRunning
+            ? "LoRa transport: running"
+            : s.Enabled
+                ? "LoRa transport: not running (check COM / jurisdiction)"
+                : "LoRa transport: off";
+    }
+
+    private void OnLoRaToggled(object? sender, ToggledEventArgs e)
+    {
+        // Applied on Save.
+    }
+
+    private async void OnLoRaSaveClicked(object? sender, EventArgs e)
+    {
+        var code = LoRaJurisdictionPicker.SelectedItem as string ?? JurisdictionCatalog.UnsetCode;
+        var settings = new LoRaTransportSettings
+        {
+            Enabled = LoRaSwitch.IsToggled,
+            ComPort = LoRaComPortEntry.Text?.Trim() ?? "",
+            BaudRate = 115200,
+            JurisdictionCode = code
+        };
+        try
+        {
+            await _lora.SaveSettingsAsync(settings).ConfigureAwait(true);
+            var user = _auth.CurrentUser;
+            if (user != null)
+                await LoRaBootstrap.EnsureRunningAsync(_lora, _p2p, user, _logger).ConfigureAwait(true);
+            else if (!settings.Enabled)
+                await _lora.StopAsync().ConfigureAwait(true);
+            await LoadLoRaSettingsAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Apply LoRa settings failed");
+            LoRaStatusLabel.Text = ex.Message;
+        }
     }
 
     private void InitializeDatabaseProviderPicker()
@@ -444,6 +499,17 @@ public partial class SettingsPage : ContentPage
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Stop P2P on logout");
+        }
+
+        try
+        {
+            var lora = MauiProgram.Services.GetService<TorgLink.LoRa.MeshtasticTransportHost>();
+            if (lora != null)
+                await lora.StopAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Stop LoRa on logout");
         }
 
         AppLog.Ui.LogInformation("Logout");
