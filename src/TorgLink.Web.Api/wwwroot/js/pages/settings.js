@@ -125,6 +125,63 @@ export function SettingsPage() {
       )
     );
 
+    // LoRa / Meshtastic
+    try {
+      const [lora, jurisdictions, peers] = await Promise.all([
+        get("/api/lora"),
+        get("/api/lora/jurisdictions"),
+        get("/api/lora/peers")
+      ]);
+      const com = el("input", { type: "text", value: lora.comPort || "", placeholder: "COM3", style: { marginTop: "8px", width: "100%" } });
+      const jur = el(
+        "select",
+        { style: { marginTop: "8px", width: "100%" } },
+        (jurisdictions || []).map((j) => {
+          const o = el("option", { value: j.code }, j.code);
+          if (j.code === lora.jurisdictionCode) o.selected = true;
+          return o;
+        })
+      );
+      const enabled = el("input", { type: "checkbox", checked: !!lora.enabled });
+      const status = el(
+        "div",
+        { class: "muted", style: { marginTop: "8px" } },
+        lora.running ? "LoRa: running" : "LoRa: off",
+        ` · max binary ${Math.round((lora.maxBinaryBytes || 20480) / 1024)} KB`,
+        peers?.length ? ` · peers ${peers.length}` : ""
+      );
+      root.appendChild(
+        el(
+          "div",
+          { class: "card" },
+          el("div", { class: "muted" }, "LoRa / Meshtastic"),
+          el("div", { class: "switch" }, el("span", null, "Enable"), enabled),
+          el("label", null, "COM port", com),
+          el("label", null, "Jurisdiction", jur),
+          status,
+          el(
+            "button",
+            {
+              class: "btn",
+              style: { marginTop: "10px" },
+              onclick: async () => {
+                await post("/api/lora", {
+                  enabled: enabled.checked,
+                  comPort: com.value,
+                  baudRate: lora.baudRate || 115200,
+                  jurisdictionCode: jur.value
+                });
+                await load();
+              }
+            },
+            "Apply LoRa"
+          )
+        )
+      );
+    } catch {
+      // LoRa API optional if host failed to start
+    }
+
     // links
     const linkrow = (label, to) => el("div", { class: "linkrow", onclick: () => nav(to) }, label);
     root.appendChild(

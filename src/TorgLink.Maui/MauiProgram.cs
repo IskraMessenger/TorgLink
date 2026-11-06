@@ -20,8 +20,10 @@ using ShortP2P.Discovery.Pings;
 using ShortP2P.Discovery.Profile;
 using ShortP2P.Discovery.RouteTables;
 using TorgLink.Maui.Services;
+using ShortP2P.Client.Transport;
 using ShortP2P.Transport;
 using ShortP2P.Transport.Abstractions;
+using TorgLink.LoRa;
 #if ANDROID
 using ShortP2P.Transport.Bluetooth.Android;
 #endif
@@ -186,6 +188,14 @@ public static class MauiProgram
             sp.GetService<IBleDiscoveredPeerStore>()));
         builder.Services.AddSingleton<IBluetoothTransportProvider>(sp =>
             sp.GetRequiredService<MauiBluetoothTransportRegistration>());
+        builder.Services.AddSingleton<LoRaTransportSettingsStore>();
+        builder.Services.AddSingleton(sp => new MeshtasticTransportHost(
+            sp.GetRequiredService<AuthService>(),
+            sp.GetRequiredService<ChatRepository>(),
+            sp.GetRequiredService<LoRaTransportSettingsStore>(),
+            sp.GetRequiredService<ILoggerFactory>()));
+        builder.Services.AddSingleton<IAdditionalTransportProvider>(sp =>
+            sp.GetRequiredService<MeshtasticTransportHost>());
         builder.Services.AddSingleton(sp => new UserP2pRuntime(
             sp.GetRequiredService<P2pRoutingSettingsStore>(),
             sp.GetRequiredService<AuthService>(),
@@ -204,7 +214,8 @@ public static class MauiProgram
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<MessengerServerSyncService>(),
             sp.GetRequiredService<IPeerProfileStore>(),
-            sp.GetRequiredService<ILocalPeerProfileSource>()));
+            sp.GetRequiredService<ILocalPeerProfileSource>(),
+            sp.GetRequiredService<IAdditionalTransportProvider>()));
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<ChatsPage>();

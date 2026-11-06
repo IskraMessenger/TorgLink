@@ -65,7 +65,7 @@ public partial class ContactsPage : ContentPage
     {
         try
         {
-            await _p2p.EnsureStartedAsync(u).ConfigureAwait(false);
+            await P2pBootstrap.EnsureStartedAsync(_p2p, u, _logger).ConfigureAwait(false);
             await MessengerServersBootstrap.EnsureRunningAsync(_p2p, _logger).ConfigureAwait(false);
         }
         catch (Exception ex)

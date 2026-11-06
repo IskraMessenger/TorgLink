@@ -3,6 +3,7 @@ using ShortP2P.Auth;
 using ShortP2P.Auth.Data;
 using ShortP2P.Client.Data;
 using ShortP2P.Client.Services;
+using TorgLink.LoRa;
 
 namespace TorgLink.Web.Api.Services;
 
@@ -14,13 +15,17 @@ internal static class ChatSessionHelper
         ChatRepository chats,
         ChatEntity chat,
         ILogger logger,
+        MeshtasticTransportHost? lora = null,
         CancellationToken cancellationToken = default)
     {
         var user = auth.CurrentUser;
         if (user == null)
             return null;
 
-        await p2p.EnsureStartedAsync(user, cancellationToken).ConfigureAwait(false);
+        if (lora != null)
+            await LoRaBootstrap.EnsureRunningAsync(lora, p2p, user, logger, cancellationToken).ConfigureAwait(false);
+        else
+            await p2p.EnsureStartedAsync(user, cancellationToken).ConfigureAwait(false);
         await MessengerServersBootstrap.EnsureRunningAsync(p2p, logger, cancellationToken).ConfigureAwait(false);
         if (!chat.IsBot)
         {
@@ -66,13 +71,14 @@ internal static class ChatSessionHelper
         AuthService auth,
         ChatRepository chats,
         ChatEntity chat,
-        ILogger logger)
+        ILogger logger,
+        MeshtasticTransportHost? lora = null)
     {
         _ = Task.Run(async () =>
         {
             try
             {
-                await EnsureSessionAsync(p2p, auth, chats, chat, logger).ConfigureAwait(false);
+                await EnsureSessionAsync(p2p, auth, chats, chat, logger, lora).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -86,12 +92,16 @@ internal static class ChatSessionHelper
         AuthService auth,
         ChatRepository chats,
         ILogger logger,
+        MeshtasticTransportHost? lora = null,
         CancellationToken cancellationToken = default)
     {
         var user = auth.CurrentUser;
         if (user == null)
             return;
-        await p2p.EnsureStartedAsync(user, cancellationToken).ConfigureAwait(false);
+        if (lora != null)
+            await LoRaBootstrap.EnsureRunningAsync(lora, p2p, user, logger, cancellationToken).ConfigureAwait(false);
+        else
+            await p2p.EnsureStartedAsync(user, cancellationToken).ConfigureAwait(false);
         AppLog.PeerConnected("p2p-runtime", user.NetworkIdShort);
         await MessengerServersBootstrap.EnsureRunningAsync(p2p, logger, cancellationToken).ConfigureAwait(false);
         await p2p.EnsureAllChatSessionsStartedAsync(user, auth, chats, null, cancellationToken).ConfigureAwait(false);
